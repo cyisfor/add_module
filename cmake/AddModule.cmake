@@ -1,0 +1,58 @@
+function (add_module directory)
+  set(listfile "${CMAKE_CURRENT_SOURCE_DIR}/${directory}/CMakeLists.txt")
+  file(TIMESTAMP "${listfile}" timestamp)
+  if(timestamp)
+	add_subdirectory("${directory}")
+	return()
+  endif(timestamp)
+  set(options)
+  set(onevalue FUNCTION)
+  set(multivalue GIT)
+  cmake_parse_arguments(PARSE_ARGV 1 A
+	"${options}" "${onevalue}" "${multivalue}")
+  if(A_GIT)
+	list(GET A_GIT 0 commit)
+	list(SUBLIST A_GIT 1 -1 A_GIT)
+	cmake_parse_arguments(GIT
+	  "SHALLOW;NORECURSE" "" "" ${A_GIT})
+	if(GIT_SHALLOW)
+	  set(GIT_SHALLOW "--depth=0")
+	endif()
+	if(GIT_NORECURSE)
+	  set(GIT_NORECURSE "")
+	else()
+	  set(GIT_NORECURSE "--recurse-submodules")
+	endif()
+	foreach(url IN LISTS urls)
+	  execute_process(
+		COMMAND git clone
+		${GIT_SHALLOW}
+		${GIT_RECURSE}
+		-b "${commit}"
+		"${url}" "${directory}"
+		RESULT_VARIABLE result)
+	  if(result EQUAL 0)
+		file(TIMESTAMP "${listfile}" timestamp)
+		if(timestamp)
+		  add_subdirectory("${directory}")
+		  return()
+		endif(timestamp)
+	  endif(result EQUAL 0)
+	  message(WARNING "URL ${url} failed for GIT ${directory}")
+	endforeach(url in LISTS urls)
+	message(WARNING
+	  "Could not clone ${directory} from any of its GIT URIs!")
+  endif(A_GIT)
+  if(A_FUNCTION)
+	"${A_FUNCTION}"()
+	file(TIMESTAMP "${listfile}" timestamp)
+	if(timestamp)
+	  add_subdirectory("${directory}")
+	  return()
+	else(timestamp)
+	  message(WARNING "function ${A_FUNCTION} to add_module ${directory} didn't get the CMakeLists.txt file of the module!")
+	endif(timestamp)
+  endif(A_FUNCTION)
+  message(FATAL_ERROR
+	"Could not clone ${directory} by any method!")
+endfunction(add_module)
