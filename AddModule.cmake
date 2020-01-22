@@ -1,7 +1,9 @@
+include_guard(GLOBAL)
+
 if(NOT MODULE_DIR)
   get_filename_component(moduledir "modules" ABSOLUTE
 	BASE_DIR "${CMAKE_BINARY_DIR}")
-  file(MKDIR "${moduledir}")
+  file(MAKE_DIRECTORY "${moduledir}")
   set(MODULE_DIR "${moduledir}"
 	CACHE
 	FILEPATH "Where modules are located")
@@ -10,7 +12,7 @@ endif()
 function (add_module directory)
   # NOT current binary dir
   get_filename_component(abs "${directory}" ABSOLUTE
-	BASE_DIR "${MODULE_DIR}"
+	BASE_DIR "${MODULE_DIR}")
   get_filename_component(listfile "CMakelists.txt" ABSOLUTE
 	BASE_DIR "${abs}")
   file(TIMESTAMP "${listfile}" timestamp)
@@ -56,16 +58,6 @@ function (add_module directory)
 	message(WARNING
 	  "Could not clone ${directory} from any of its GIT URIs!")
   endif(A_GIT)
-  if(A_FUNCTION)
-	"${A_FUNCTION}"()
-	file(TIMESTAMP "${listfile}" timestamp)
-	if(timestamp)
-	  add_subdirectory("${abs}")
-	  return()
-	else(timestamp)
-	  message(WARNING "function ${A_FUNCTION} to add_module ${directory} didn't get the CMakeLists.txt file of the module!")
-	endif(timestamp)
-  endif(A_FUNCTION)
   message(FATAL_ERROR
 	"Could not clone ${directory} by any method!")
 endfunction(add_module)
