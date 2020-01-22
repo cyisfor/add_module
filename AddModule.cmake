@@ -28,6 +28,7 @@ function (add_module directory)
   if(A_GIT)
 	list(GET A_GIT 0 commit)
 	list(SUBLIST A_GIT 1 -1 A_GIT)
+	list(JOIN A_GIT " " A_GIT)	
 	cmake_parse_arguments(GIT
 	  "SHALLOW;NORECURSE" "" "URLS" ${A_GIT})
 	if(GIT_SHALLOW)
@@ -38,6 +39,7 @@ function (add_module directory)
 	else()
 	  set(GIT_NORECURSE "--recurse-submodules")
 	endif()
+
 	foreach(url IN LISTS GIT_URLS)
 	  execute_process(
 		COMMAND git clone
