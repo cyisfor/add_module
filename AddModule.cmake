@@ -18,14 +18,17 @@ if(NOT MODULE_DIR)
 endif(NOT MODULE_DIR)
 
 function (safely_add_subdir source binary)
-  get_property(subdirs DIRECTORY "${CMAKE_SOURCE_DIR}"
-	PROPERTY SUBDIRECTORIES)
-  list(FIND subdirs "${source}" foundit)
-  if(foundit EQUAL -1)
-	add_subdirectory("${source}" "${binary}")
-  else(foundit EQUAL -1)
-	#message("ALREADY ADDED ${source}")
-  endif(foundit EQUAL -1)
+  # the SUBDIRECTORIES property is useless
+  # because even if you add_subdirectory in a different source dir
+  # it still errors out, with no way to tell which source dir had the subdir
+  get_property(foundit GLOBAL PROPERTY "_add_module_subdir_${source}" DEFINED)
+  if(foundit)
+	return()
+  endif()
+  define_property(GLOBAL PROPERTY "_add_module_subdir_${source}"
+	BRIEF_DOCS "no"
+	FULL_DOCS "no")
+  add_subdirectory("${source}" "${binary}")
 endfunction(safely_add_subdir)
 
 function (add_module_git directory source listfile RESULT commit)
