@@ -17,25 +17,23 @@ if(NOT MODULE_DIR)
 	FILEPATH "Where modules are compiled")
 endif()
 
-define_property(DIRECTORY PROPERTY add_module_added
-  BRIEF_DOCS "Whether this directory has been added by add_module"
-  FULL_DOCS "add_subdirectory screws up when you try add_subdirectory twice, and cmake sucks, so we have to keep track of if it's been invoked ourselves.")
-
 function (add_module_check directory commit existingfile abs)
   file(TIMESTAMP "${existingfile}" timestamp)
   get_filename_component(bindir "${directory}" ABSOLUTE
 	BASE_DIR "${MODULE_BIN_DIR}")
   file(MAKE_DIRECTORY "${bindir}")
   file(RELATIVE_PATH relative "${MODULE_DIR}" "${abs}" )
-  find_path(derp "CMakeLists.txt" "${abs}" NO_DEFAULT_PATH)
-  message("going into ${abs} (${derp}) ${relative}")
   if(timestamp)
-	get_property(added DIRECTORY "${abs}" PROPERTY add_module_added SET)
-	if(NOT added)
+	message("going into ${abs}")
+	get_property(subdirs DIRECTORY "${CMAKE_SOURCE_DIR}"
+	  PROPERTY SUBDIRECTORIES)
+	list(FIND subdirs "${abs}" foundit)
+	if(foundit EQUAL -1)
 	  message("ADDING IT ${abs}")
 	  add_subdirectory("${abs}" "${bindir}")
-	  set_property(DIRECTORY "${abs}" PROPERTY add_module_added 1)
-	endif(NOT added)
+	else(foundit EQUAL -1)
+	  message("ALREADY ADDED ${abs}")
+	endif(foundit EQUAL -1)
   endif(timestamp)
 endfunction(add_module_check)
 
