@@ -1,8 +1,6 @@
-if(__ADD_MODULE_INCLUDED__)
+if(ENV{__ADD_MODULE_INCLUDED__})
   return()
 endif()
-set(__ADD_MODULE_INCLUDED__ 1 CACHE INTERNAL
-  "only include AddModule.cmake once, even if it's in several subprojects" FORCE)
 
 if(NOT MODULE_DIR)
   get_filename_component(moduledir "modules" ABSOLUTE
@@ -125,3 +123,5 @@ function (add_module directory)
   message(FATAL_ERROR
 	"Could not clone ${directory} by any method!")
 endfunction(add_module)
+
+set(ENV{__ADD_MODULE_INCLUDED__} 1)
