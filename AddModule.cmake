@@ -35,7 +35,7 @@ function (add_module_check directory commit existingfile abs)
 	  set_property(DIRECTORY "${abs}" PROPERTY add_module_added 1)
 	endif(NOT added)
   endif(timestamp)
-endmacro(add_module_check)
+endfunction(add_module_check)
 
 function (add_module_git directory abs listfile RESULT commit)
   cmake_parse_arguments(PARSE_ARGV 5 GIT
