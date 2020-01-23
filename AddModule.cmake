@@ -34,8 +34,8 @@ function (add_module_git directory source listfile RESULT commit)
 	return()
   endif()
   define_property(GLOBAL PROPERTY "add_module_git_${source}"
-	BRIEF_DOCS ""
-	FULL_DOCS "")
+	BRIEF_DOCS "no"
+	FULL_DOCS "no")
   cmake_parse_arguments(PARSE_ARGV 5 GIT
 	"NOSHALLOW;RECURSE" "" "")
   get_filename_component(dotgit ".git" ABSOLUTE
