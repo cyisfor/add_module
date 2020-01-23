@@ -17,6 +17,10 @@ if(NOT MODULE_DIR)
 	FILEPATH "Where modules are compiled")
 endif()
 
+define_property(DIRECTORY PROPERTY add_module_added
+  BRIEF_DOCS "Whether this directory has been added by add_module"
+  FULL_DOCS "add_subdirectory screws up when you try add_subdirectory twice, and cmake sucks, so we have to keep track of if it's been invoked ourselves.")
+
 macro (add_module_check directory commit existingfile abs)
   file(TIMESTAMP "${existingfile}" timestamp)
   get_filename_component(bindir "${directory}" ABSOLUTE
@@ -24,7 +28,11 @@ macro (add_module_check directory commit existingfile abs)
   file(MAKE_DIRECTORY "${bindir}")
   message("going into ${abs}")
   if(timestamp)
-	add_subdirectory("${abs}" "${bindir}")  
+	get_property(added DIRECTORY "${abs}" PROPERTY add_module_added SET)
+	if(NOT added)
+	  add_subdirectory("${abs}" "${bindir}")
+	  set_property(DIRECTORY "${abs}" PROPERTY add_module_added 1)
+	endif(NOT added)
   endif(timestamp)
 endmacro(add_module_check)
 
