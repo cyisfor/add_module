@@ -32,7 +32,7 @@ function (add_module_git directory source listfile RESULT commit)
   get_property(prop GLOBAL PROPERTY "add_module_git_${source}" DEFINED)
   if(prop)
 	get_property(prop GLOBAL PROPERTY "add_module_git_${source}")
-	if("${prop}" STREQUAL "${commit}")
+	if(NOT prop STREQUAL commit)
 	  message(FATAL_ERROR
 		"Need to have the same commit hash for ${directory} ${prop} != ${commit} ${source}")
 	else()
