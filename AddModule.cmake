@@ -15,7 +15,7 @@ if(NOT MODULE_DIR)
   set(MODULE_BIN_DIR "${moduledir}"
 	CACHE
 	FILEPATH "Where modules are compiled")
-endif()
+endif(NOT MODULE_DIR)
 
 function (safely_add_subdir source binary)
   get_property(subdirs DIRECTORY "${CMAKE_SOURCE_DIR}"
@@ -29,6 +29,13 @@ function (safely_add_subdir source binary)
 endfunction(safely_add_subdir)
 
 function (add_module_git directory source listfile RESULT commit)
+  get_property(prop GLOBAL PROPERTY "add_module_git_${source}" DEFINED)
+  if(prop)
+	return()
+  endif()
+  define_property(GLOBAL PROPERTY "add_module_git_${source}"
+	BRIEF_DOCS ""
+	FULL_DOCS "")
   cmake_parse_arguments(PARSE_ARGV 5 GIT
 	"NOSHALLOW;RECURSE" "" "")
   get_filename_component(dotgit ".git" ABSOLUTE
