@@ -29,7 +29,7 @@ macro (add_module_check directory commit existingfile abs)
 endmacro(add_module_check)
 
 function (add_module_git directory abs listfile RESULT commit)
-  cmake_parse_arguments(PARSE_ARGV 3 GIT
+  cmake_parse_arguments(PARSE_ARGV 5 GIT
 	"NOSHALLOW;RECURSE" "" "")
   get_filename_component(dotgit ".git" ABSOLUTE
 	BASE_DIR "${abs}")
