@@ -36,15 +36,14 @@ function (add_module_git directory source listfile RESULT commit)
 	  message(FATAL_ERROR
 		"Need to have the same commit hash for ${directory} ${prop} != ${commit} ${source}")
 	else()
-	  message("OK yay got commit ${commit} again")
+	  #message("OK yay got commit ${commit} again")
 	endif()
 	return()
   endif()
   define_property(GLOBAL PROPERTY "add_module_git_${source}"
 	BRIEF_DOCS "no"
 	FULL_DOCS "no")
-  set_property(GLOBAL PROPERTY "add_module_git_${source}"
-	"${commit}")
+  set_property(GLOBAL PROPERTY "add_module_git_${source}" "${commit}")
   cmake_parse_arguments(PARSE_ARGV 5 GIT
 	"NOSHALLOW;RECURSE" "" "")
   get_filename_component(dotgit ".git" ABSOLUTE
