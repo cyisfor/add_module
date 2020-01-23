@@ -31,11 +31,20 @@ endfunction(safely_add_subdir)
 function (add_module_git directory source listfile RESULT commit)
   get_property(prop GLOBAL PROPERTY "add_module_git_${source}" DEFINED)
   if(prop)
+	get_property(prop GLOBAL PROPERTY "add_module_git_${source}")
+	if(prop STREQUAL commit)
+	  message(FATAL_ERROR
+		"Need to have the same commit hash for ${directory} ${prop} != ${commit} ${source}")
+	else()
+	  message("OK yay got commit ${commit} again")
+	endif()
 	return()
   endif()
   define_property(GLOBAL PROPERTY "add_module_git_${source}"
 	BRIEF_DOCS "no"
 	FULL_DOCS "no")
+  set_property(GLOBAL PROPERTY "add_module_git_${source}"
+	"${commit}")
   cmake_parse_arguments(PARSE_ARGV 5 GIT
 	"NOSHALLOW;RECURSE" "" "")
   get_filename_component(dotgit ".git" ABSOLUTE
