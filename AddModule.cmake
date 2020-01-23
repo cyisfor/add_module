@@ -17,32 +17,26 @@ if(NOT MODULE_DIR)
 	FILEPATH "Where modules are compiled")
 endif()
 
-function (add_module_check directory commit existingfile abs)
-  get_filename_component(bindir "${directory}" ABSOLUTE
-	BASE_DIR "${MODULE_BIN_DIR}")
-  file(MAKE_DIRECTORY "${bindir}")
-  file(RELATIVE_PATH relative "${MODULE_DIR}" "${abs}" )
-  #message("going into ${abs}")
+function (safely_add_subdir source binary)
   get_property(subdirs DIRECTORY "${CMAKE_SOURCE_DIR}"
 	PROPERTY SUBDIRECTORIES)
-  list(FIND subdirs "${abs}" foundit)
+  list(FIND subdirs "${source}" foundit)
   if(foundit EQUAL -1)
-	#message("ADDING IT ${abs}")
-	add_subdirectory("${abs}" "${bindir}")
+	add_subdirectory("${source}" "${binary}")
   else(foundit EQUAL -1)
-	#message("ALREADY ADDED ${abs}")
+	#message("ALREADY ADDED ${source}")
   endif(foundit EQUAL -1)
-endfunction(add_module_check)
+endfunction(safely_add_subdir)
 
-function (add_module_git directory abs listfile RESULT commit)
+function (add_module_git directory source listfile RESULT commit)
   cmake_parse_arguments(PARSE_ARGV 5 GIT
 	"NOSHALLOW;RECURSE" "" "")
   get_filename_component(dotgit ".git" ABSOLUTE
-	BASE_DIR "${abs}")
+	BASE_DIR "${source}")
   file(TIMESTAMP "${dotgit}" dotgit)
   if(dotgit)
 	# already there yo
-	set(temp "${abs}")
+	set(temp "${source}")
   else(dotgit)
 	get_filename_component(temp "temp" ABSOLUTE
 	  BASE_DIR "${MODULE_DIR}")
@@ -89,7 +83,7 @@ function (add_module_git directory abs listfile RESULT commit)
 		message(FATAL_ERROR "Could not checkout commit ${commit} from ${directory}")
 	  endif()
 	  if(NOT dotgit)
-		file(RENAME "${temp}" "${abs}")
+		file(RENAME "${temp}" "${source}")
 		file(REMOVE_RECURSE "${temp}")
 	  endif(NOT dotgit)
 	  set("${RESULT}" TRUE PARENT_SCOPE)
@@ -107,10 +101,12 @@ endfunction(add_module_git)
 
 function (add_module directory)
   # NOT current binary dir
-  get_filename_component(abs "${directory}" ABSOLUTE
+  get_filename_component(source "${directory}" ABSOLUTE
 	BASE_DIR "${MODULE_DIR}")
+  get_filename_component(bindir "${directory}" ABSOLUTE
+	BASE_DIR "${MODULE_BIN_DIR}")  
   get_filename_component(listfile "CMakeLists.txt" ABSOLUTE
-	BASE_DIR "${abs}")
+	BASE_DIR "${source}")
   # no return here because we have to make sure the correct commit is checked out 
   set(options)
   set(onevalue FUNCTION)
@@ -118,14 +114,14 @@ function (add_module directory)
   cmake_parse_arguments(PARSE_ARGV 1 A
 	"${options}" "${onevalue}" "${multivalue}")
   if(A_GIT)
-	add_module_git("${directory}" "${abs}" "${listfile}" RESULT ${A_GIT})
+	add_module_git("${directory}" "${source}" "${listfile}" RESULT ${A_GIT})
 	if(RESULT)
 	  file(TIMESTAMP "${listfile}" timestamp)
 	  if(timestamp)
 	  else(timestamp)
 		message(FATAL_ERROR "no listfile found ${directory} ${A_GIT}")
 	  endif(timestamp)
-	  add_module_check("${directory}" "${commit}" "${listfile}" "${abs}")
+	  safely_add_subdir("${source}" "${bindir}")
 	  return()
 	endif(RESULT)
   endif(A_GIT)
