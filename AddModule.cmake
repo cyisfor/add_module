@@ -21,7 +21,7 @@ define_property(DIRECTORY PROPERTY add_module_added
   BRIEF_DOCS "Whether this directory has been added by add_module"
   FULL_DOCS "add_subdirectory screws up when you try add_subdirectory twice, and cmake sucks, so we have to keep track of if it's been invoked ourselves.")
 
-macro (add_module_check directory commit existingfile abs)
+function (add_module_check directory commit existingfile abs)
   file(TIMESTAMP "${existingfile}" timestamp)
   get_filename_component(bindir "${directory}" ABSOLUTE
 	BASE_DIR "${MODULE_BIN_DIR}")
