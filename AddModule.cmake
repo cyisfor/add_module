@@ -30,7 +30,7 @@ endmacro(add_module_check)
 
 function (add_module_git directory abs listfile RESULT commit)
   cmake_parse_arguments(PARSE_ARGV 3 GIT
-	"NOSHALLOW;RECURSE" "" "URLS")
+	"NOSHALLOW;RECURSE" "" "")
   get_filename_component(dotgit ".git" ABSOLUTE
 	BASE_DIR "${abs}")
   file(TIMESTAMP "${dotgit}" dotgit)
@@ -64,7 +64,7 @@ function (add_module_git directory abs listfile RESULT commit)
 	  message(FATAL_ERROR "Couldn't init a git repository? ${herp} ${result}")
 	endif()
   endif(NOT dotgit)
-  foreach(url IN LISTS GIT_URLS)
+  foreach(url IN LISTS GIT_UNPARSED_ARGUMENTS)
 	git(remote set-url origin "${url}")
 	if(NOT GIT_NOSHALLOW)
 	  # https://stackoverflow.com/questions/31278902/how-to-shallow-clone-a-specific-commit-with-depth-1
@@ -90,7 +90,7 @@ function (add_module_git directory abs listfile RESULT commit)
 	  return()
 	endif(result EQUAL 0)
 	message(WARNING "URL ${url} failed for GIT ${directory}")
-  endforeach(url in LISTS urls)
+  endforeach(url in LISTS GIT_UNPARSED_ARGUMENTS)
   message(WARNING
 	"Could not clone ${directory} from any of its GIT URIs!")
   set("${RESULT}" FALSE PARENT_SCOPE)
