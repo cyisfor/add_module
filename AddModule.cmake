@@ -24,7 +24,7 @@ macro (add_module_check directory commit listfile abs)
   if(timestamp)
 	add_subdirectory("${abs}" "${bindir}")  
   endif(timestamp)
-endmacro()
+endmacro(add_module_check)
 
 function (add_module_git directory abs listfile RESULT commit)
   cmake_parse_arguments(PARSE_ARGV 3 GIT
@@ -45,7 +45,7 @@ function (add_module_git directory abs listfile RESULT commit)
 	  COMMAND git ${ARGV}
 	  WORKING_DIRECTORY "${temp}"
 	  RESULT_VARIABLE result)
-  endmacro(derp)
+  endmacro(git)
   git(init)
   git(config --replace-all advice.detachedHead false)
   git(remote add origin placeholder)
