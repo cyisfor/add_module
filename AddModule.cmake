@@ -80,7 +80,7 @@ function (add_module_git directory abs listfile RESULT commit)
 	  if(NOT result EQUAL 0)
 		message(FATAL_ERROR "Could not checkout commit ${commit} from ${directory}")
 	  endif()
-	  if(NOT dotgit
+	  if(NOT dotgit)
 		file(RENAME "${temp}" "${abs}")
 		file(REMOVE_RECURSE "${temp}")
 	  endif(NOT dotgit)
