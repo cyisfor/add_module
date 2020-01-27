@@ -5,4 +5,5 @@ git pull
 cd ..
 git add add_module
 git commit -m "Updating add_module"
+git push
 git show
