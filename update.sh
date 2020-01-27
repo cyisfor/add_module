@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 cd add_module
 git pull
 cd ..
