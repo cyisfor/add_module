@@ -9,7 +9,7 @@ if(NOT MODULE_DIR)
   set(MODULE_DIR "${moduledir}"
 	CACHE
 	FILEPATH "Where modules are located")
-  get_filename_component(moduledir "module_bin" ABSOLUTE
+  get_filename_component(moduledir "bin_modules" ABSOLUTE
 	BASE_DIR "${CMAKE_BINARY_DIR}")
   file(MAKE_DIRECTORY "${moduledir}")
   set(MODULE_BIN_DIR "${moduledir}"
