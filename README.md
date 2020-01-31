@@ -4,13 +4,15 @@ Yeah that’s a pretty f-ing dumb idea.
 
 So I can’t fix Go, but I can provide a slightly less odious alternative using cmake.
 
+```
 add_module(subdirectory
   GIT somecommithash1234
   file://$ENV{HOME}/.local/repo/subdirectory
   https://supercoolhost.info/~supercooldud/subdirectory.git
   https://gitlab.com/supercooldud/subdirectory.git
   https://github.com/supercooldud/subdirectory.git)
-  
+```
+
 Voila, an equivalent to Git submodules, but not tying yourself to any specific host. You can specify “master” or some branch for the commit hash, but you can specify a commit hash, which ensures that no amount of maliciousness on any host’s part is going to corrupt your code, if they only have access to the dependencies. You can specify a list of URLs, with the quickest local repositories on top, and the slowest, least reliable repositories on the bottom.
 
 It could work in theory for other versioning systems like SVN, CVS, Mercurial or Darcs, but I only implemented Git so far since I don’t know all those too well. It uses shallow clones by default since Git has good support for that now and it saves on bandwidth and disk space. It does NOT recurse into submodules by default because as we’ve said, git submodules kind of suck. Instead, you can just `add_module` the submodules in your top level CMakeLists.txt file, or fix the code you’re adding to use `add_module` instead of submodules, and get a more robust and certain way to clone those submodules too.
