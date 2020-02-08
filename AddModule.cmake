@@ -38,13 +38,18 @@ function (safely_add_subdir source binary)
   # it still errors out, with no way to tell which source dir had the subdir
   get_property(foundit
 	TARGET add_module_derp
-	PROPERTY "_add_module_subdir_${source}"
+	PROPERTY "subdir_${source}"
 	DEFINED)
   if(foundit)
 	return()
   endif()
-  define_property(TARGET add_module_derp
-	PROPERTY "_add_module_subdir_${source}" "derp")
+  message("DEFINEIT")
+  define_property(TARGET
+	PROPERTY "subdir_${source}"
+	BRIEF_DOCS "FU"
+	FULL_DOCS "FU")
+  
+  set_property(TARGET  add_module_derp PROPERTY "subdir_${source}" "")
   add_subdirectory("${source}" "${binary}")
 endfunction(safely_add_subdir)
 
@@ -92,7 +97,7 @@ function (add_module_git directory source listfile RESULT commit)
   endmacro(git)
   if(GIT_SIGNER)
 	function (gpg)
-	  cmake_parse_arguments(PARSE_ARGV 0 A "INTERACTIVE" "INPUT;INPUT_FILE;OUTPUT_VARIABLE" "")
+	  cmake_parse_arguments(PARSE_ARGV 0 A "INTERACTIVE" "HOME;INPUT;INPUT_FILE;OUTPUT_VARIABLE;OUTPUT_FILE" "")
 	  if(A_INPUT)
 		set(A_INPUT "${A_INPUT} |")
 	  endif()
@@ -113,6 +118,9 @@ function (add_module_git directory source listfile RESULT commit)
 	  if(A_OUTPUT_VARIABLE)
 		set(A_OUTPUT_VARIABLE "OUTPUT_VARIABLE ${A_OUTPUT_VARIABLE}")
 	  endif()
+	  if(A_OUTPUT_FILE)
+		set(A_OUTPUT_FILE "OUTPUT_FILE ${A_OUTPUT_FILE}")
+	  endif()
 	  # XXX: cmake won't escape the arguments! Now what?
 	  # not a problem for gpg specifically though
 	  list(JOIN A_UNPARSED_ARGUMENTS " " args)
@@ -121,11 +129,12 @@ function (add_module_git directory source listfile RESULT commit)
 		PROPERTY "listdir")	  
 	  configure_file("${listdir}/gpg_thing.cmake" "derpthing.cmake")
 	  include("${CMAKE_CURRENT_BINARY_DIR}/derpthing.cmake")
+	  set(result "${result}" PARENT_SCOPE)
 	endfunction(gpg)
 	function(gpgorfail)
 	  gpg(${ARGV})
 	  if(NOT result EQUAL 0)
-		message(FATAL_ERROR "Couldn't run gpg ${A_INTERACTIVE}  ${args} ${result}")
+		message(FATAL_ERROR "(${result}) Couldn't run gpg ${A_INTERACTIVE} ${args}")
 	  endif()
 	endfunction(gpgorfail)
 
@@ -154,17 +163,18 @@ function (add_module_git directory source listfile RESULT commit)
 		DIRECTORY_PERMISSIONS
 		OWNER_READ OWNER_WRITE OWNER_EXECUTE)
 	  file(REMOVE "foo${gpgtemphome}")
+	  # import our home keyring
+	  gpgorfail(
+		HOME "$ENV{HOME}/.gnupg"
+		OUTPUT_FILE "${gpgtemp}" 
+		--export)
+	  gpgorfail(
+		HOME "${gpgtemphome}"
+		INPUT_FILE "${gpgtemp}"
+		--quiet
+		--import)	  
 	  file(RENAME "${gpgtemphome}" "${GPG_HOME}")
 	endif()
-	# import our home keyring
-	gpgorfail(
-	  HOME "$ENV{HOME}/.gnupg"
-	  OUTPUT_FILE "${gpgtemp}" 
-	  --export)
-	gpgorfail(
-	  INPUT_FILE "${gpgtemp}"
-	  --import)
-
 	gpg(--list-keys "${GIT_SIGNER}" OUTPUT_FILE "${gpgtemp}")
 	file(STRINGS "${gpgtemp}" lines)
 	list(LENGTH lines linelen)

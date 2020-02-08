@@ -6,4 +6,5 @@ execute_process(
   ${args}
   RESULT_VARIABLE result
   ${A_INPUT_FILE}
+  ${A_OUTPUT_FILE}
   ${A_OUTPUT_VARIABLE})
