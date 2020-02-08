@@ -43,7 +43,6 @@ function (safely_add_subdir source binary)
   if(foundit)
 	return()
   endif()
-  message("DEFINEIT")
   define_property(TARGET
 	PROPERTY "subdir_${source}"
 	BRIEF_DOCS "FU"
