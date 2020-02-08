@@ -2,6 +2,14 @@ if(ENV{__ADD_MODULE_INCLUDED__})
   return()
 endif()
 
+set(ADD_MODULE_STRICT_VERSION TRUE CACHE BOOL
+  "Set this to OFF and add_module will only warn upon detecting a version mismatch instead of erroring out. May be good to disable when debugging deep submodules with inadequate self tests. A better idea would be to write adequate self tests for those submodules.")
+
+set(GPG_HOME "${CMAKE_BINARY_DIR}/gnupg_modules"
+  CACHE STRING
+  "The GNUPGHOME for trusting keys in CMakeLists.txt")
+
+
 if(NOT MODULE_DIR)
   get_filename_component(moduledir "modules" ABSOLUTE
 	BASE_DIR "${CMAKE_BINARY_DIR}")
@@ -17,17 +25,26 @@ if(NOT MODULE_DIR)
 	FILEPATH "Where modules are compiled")
 endif(NOT MODULE_DIR)
 
+if(NOT TARGET add_module_derp)
+  add_custom_target(add_module_derp)
+  set_property(TARGET add_module_derp 
+	PROPERTY listdir
+	"${CMAKE_CURRENT_LIST_DIR}")
+endif()
+
 function (safely_add_subdir source binary)
   # the SUBDIRECTORIES property is useless
   # because even if you add_subdirectory in a different source dir
   # it still errors out, with no way to tell which source dir had the subdir
-  get_property(foundit GLOBAL PROPERTY "_add_module_subdir_${source}" DEFINED)
+  get_property(foundit
+	TARGET add_module_derp
+	PROPERTY "_add_module_subdir_${source}"
+	DEFINED)
   if(foundit)
 	return()
   endif()
-  define_property(GLOBAL PROPERTY "_add_module_subdir_${source}"
-	BRIEF_DOCS "no"
-	FULL_DOCS "no")
+  set_property(TARGET add_module_derp
+	PROPERTY "_add_module_subdir_${source}" "derp")
   add_subdirectory("${source}" "${binary}")
 endfunction(safely_add_subdir)
 
@@ -48,7 +65,7 @@ function (add_module_git directory source listfile RESULT commit)
 	FULL_DOCS "no")
   set_property(GLOBAL PROPERTY "add_module_git_${source}" "${commit}")
   cmake_parse_arguments(PARSE_ARGV 5 GIT
-	"NOSHALLOW;RECURSE" "" "")
+	"NOSHALLOW;RECURSE" "SIGNER" "")
   get_filename_component(dotgit ".git" ABSOLUTE
 	BASE_DIR "${source}")
   file(TIMESTAMP "${dotgit}" dotgit)
@@ -73,15 +90,96 @@ function (add_module_git directory source listfile RESULT commit)
 	  WORKING_DIRECTORY "${temp}"
 	  RESULT_VARIABLE result)
   endmacro(git)
+  if(GIT_SIGNER)
+	function (gpg)
+	  cmake_parse_arguments(PARSE_ARGV 0 A "INTERACTIVE" "INPUT;INPUT_FILE;OUTPUT_VARIABLE" "")
+	  if(A_INPUT)
+		set(A_INPUT "${A_INPUT} |")
+	  endif()
+	  if(A_INTERACTIVE)
+		set(A_INTERACTIVE "")
+	  else()
+		set(A_INTERACTIVE
+		  "--batch --with-colons --no-tty --yes")
+	  endif()
+	  if(A_HOME)
+	  else()
+		set(A_HOME "${GPG_HOME}")
+		file(MAKE_DIRECTORY "${A_HOME}")
+	  endif()
+	  if(A_INPUT_FILE)
+		set(A_INPUT_FILE "INPUT_FILE ${A_INPUT_FILE}")
+	  endif()
+	  if(A_OUTPUT_VARIABLE)
+		set(A_OUTPUT_VARIABLE "OUTPUT_VARIABLE ${A_OUTPUT_VARIABLE}")
+	  endif()
+	  # XXX: cmake won't escape the arguments! Now what?
+	  # not a problem for gpg specifically though
+	  list(JOIN A_UNPARSED_ARGUMENTS " " args)
+	  get_property(listdir
+		TARGET add_module_derp
+		PROPERTY "listdir")	  
+	  configure_file("${listdir}/gpg_thing.cmake" "derpthing.cmake")
+	  include("${CMAKE_CURRENT_BINARY_DIR}/derpthing.cmake")
+	endfunction(gpg)
+	function(gpgorfail)
+	  gpg(${ARGV})
+	  if(NOT result EQUAL 0)
+		message(FATAL_ERROR "Couldn't run gpg ${A_INTERACTIVE}  ${args} ${result}")
+	  endif()
+	endfunction(gpgorfail)
+
+  endif(GIT_SIGNER)
   if(NOT dotgit)
 	file(MAKE_DIRECTORY "${temp}")
 	git(init)
 	git(config --replace-all advice.detachedHead false)
 	git(remote add origin placeholder)
 	if(NOT result EQUAL 0)
-	  message(FATAL_ERROR "Couldn't init a git repository? ${herp} ${result}")
+	  message(FATAL_ERROR "Couldn't init a git repository? ${result}")
 	endif()
   endif(NOT dotgit)
+  if(GIT_SIGNER)
+	set(gpgtemp "${CMAKE_CURRENT_BINARY_DIR}/.temp")
+	file(TIMESTAMP "${GPG_HOME}" res)
+	if(res)
+	else()
+	  # set up our module's GNUPG home directory...
+	  set(gpgtemphome "${CMAKE_BINARY_DIR}/.tmpgnupg_modules")
+	  # ugh... cmake sucks
+	  file(MAKE_DIRECTORY "foo${gpgtemphome}")
+	  file(MAKE_DIRECTORY "foo${gpgtemphome}/${gpgtemphome}")
+	  file(COPY "foo${gpgtemphome}/${gpgtemphome}"
+		DESTINATION "."
+		DIRECTORY_PERMISSIONS
+		OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+	  file(REMOVE "foo${gpgtemphome}")
+	  file(RENAME "${gpgtemphome}" "${GPG_HOME}")
+	endif()
+	if(false)
+	gpgorfail(
+	  HOME "$ENV{HOME}/.gnupg"
+	  OUTPUT_FILE "${gpgtemp}" 
+	  --export)
+	gpgorfail(
+	  INPUT_FILE "${gpgtemp}"
+	  --import)
+	endif()
+	gpg(--list-keys "${GIT_SIGNER}" OUTPUT_FILE "${gpgtemp}")
+	file(STRINGS "${gpgtemp}" lines)
+	list(LENGTH lines linelen)
+	if(linelen EQUAL 1)
+	  message("git signer ${GIT_SIGNER} not found. Need to receive it...")
+	  gpg(--recv-key "${GIT_SIGNER}")
+	  # set to ultimate trust (for our local module GNUPGHOME)
+	  gpg(INPUT "echo ${GIT_SIGNER}:6:"
+		--import-ownertrust)
+	else()
+	  message("git signer ${GIT_SIGNER} found.")
+	endif()
+	git(config --replace-all merge.verify-signatures true)
+  endif(GIT_SIGNER)
+
   foreach(url IN LISTS GIT_UNPARSED_ARGUMENTS)
 	git(remote set-url origin "${url}")
 	if(NOT GIT_NOSHALLOW)
@@ -107,7 +205,11 @@ function (add_module_git directory source listfile RESULT commit)
 	  set("${RESULT}" TRUE PARENT_SCOPE)
 	  return()
 	endif(result EQUAL 0)
-	message(WARNING "URL ${url} failed for GIT ${directory}")
+	if(ADD_MODULE_STRICT_VERSION)
+	  message(FATAL_ERROR "URL ${url} failed for GIT ${directory}")
+	else()
+	  message(WARNING "URL ${url} failed for GIT ${directory}")
+	endif()
   endforeach(url in LISTS GIT_UNPARSED_ARGUMENTS)
   message(WARNING
 	"Could not clone ${directory} from any of its GIT URIs!")
