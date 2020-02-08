@@ -43,7 +43,7 @@ function (safely_add_subdir source binary)
   if(foundit)
 	return()
   endif()
-  set_property(TARGET add_module_derp
+  define_property(TARGET add_module_derp
 	PROPERTY "_add_module_subdir_${source}" "derp")
   add_subdirectory("${source}" "${binary}")
 endfunction(safely_add_subdir)
@@ -156,7 +156,7 @@ function (add_module_git directory source listfile RESULT commit)
 	  file(REMOVE "foo${gpgtemphome}")
 	  file(RENAME "${gpgtemphome}" "${GPG_HOME}")
 	endif()
-	if(false)
+	# import our home keyring
 	gpgorfail(
 	  HOME "$ENV{HOME}/.gnupg"
 	  OUTPUT_FILE "${gpgtemp}" 
@@ -164,7 +164,7 @@ function (add_module_git directory source listfile RESULT commit)
 	gpgorfail(
 	  INPUT_FILE "${gpgtemp}"
 	  --import)
-	endif()
+
 	gpg(--list-keys "${GIT_SIGNER}" OUTPUT_FILE "${gpgtemp}")
 	file(STRINGS "${gpgtemp}" lines)
 	list(LENGTH lines linelen)
