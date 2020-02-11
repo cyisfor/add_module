@@ -4,6 +4,14 @@ set(GNUPG_HOME "${CMAKE_BINARY_DIR}/gnupg"
 
 set(_GNUPG_CMAKE_SUCKS "${CMAKE_CURRENT_LIST_DIR}")
 
+if(NOT TARGET _cmake_sux_gpg)
+  add_custom_target(_cmake_sux_gpg)
+  define_property(TARGET
+	PROPERTY checked_signers
+	BRIEF_DOCS "Signers we already checked to exist"
+	FULL_DOCS "natch")
+endif()
+
 function (gpg result)
   cmake_parse_arguments(PARSE_ARGV 1 A "INTERACTIVE;NOHOME" "HOME;INPUT;INPUT_FILE;OUTPUT_VARIABLE;OUTPUT_FILE" "")
   if(A_INPUT)
@@ -84,6 +92,12 @@ function(gpg_parse_signer gpgtemp result)
 endfunction(gpg_found_signer)
 
 function(gpg_check_signer signer)
+  get_property(checked TARGET _cmake_sux_gpg
+	PROPERTY checked_signers)
+  list(FIND checked "${signer}" result)
+  if(NOT result EQUAL -1)
+	return()
+  endif()
   file(RELATIVE_PATH gpgtemp "${GNUPG_HOME}" ".temp")
   gpg(result --list-keys "${signer}" OUTPUT_VARIABLE ignore)
   if(result EQUAL 0)
@@ -98,6 +112,9 @@ function(gpg_check_signer signer)
 	  message("nope. trying to receive it...")
 	  gpgorfail(--recv-key "${signer}")
 	endif()
+	list(APPEND checked "${signer}")
+	set_property(checked TARGET _cmake_sux_gpg
+	  PROPERTY checked_signers "${checked}")
   endif()
   # set to ultimate trust (for our local module GNUPGHOME)
   gpg(INPUT "echo ${signer}:6:"
