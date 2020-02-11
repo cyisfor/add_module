@@ -21,13 +21,14 @@ if(NOT MODULE_DIR)
 	FILEPATH "Where modules are compiled")
 endif(NOT MODULE_DIR)
 
-add_custom_target(_cmake_sux_add_module)
-define_property(TARGET
-  PROPERTY DIRS_ADDED
-  BRIEF_DOCS "Subdirs already added by add_module"
-  FULL_DOCS "FU")
-
-set(_CMAKE_SUX_ADD_MODULE_DIRS_ADDED)
+if(TARGET _cmake_sux_add_module)
+else()
+  add_custom_target(_cmake_sux_add_module)
+  define_property(TARGET
+	PROPERTY DIRS_ADDED
+	BRIEF_DOCS "Subdirs already added by add_module"
+	FULL_DOCS "FU")
+endif()
 
 function (safely_add_subdir source binary)
   # the SUBDIRECTORIES property is useless
