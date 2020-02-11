@@ -24,7 +24,7 @@ function (gpg result)
 	  set(A_HOME "${GNUPG_HOME}")
 	endif()
 	file(MAKE_DIRECTORY "${A_HOME}")
-	set(A_HOME "env GNUPGHOME=\"${A_HOME}\"")
+	set(A_HOME "env GNUPGHOME=${A_HOME}")
   endif(A_NOHOME)
   
   if(A_INPUT_FILE)
@@ -44,17 +44,18 @@ function (gpg result)
 	file(TIMESTAMP "${GNUPG_HOME}" res)
 	if(res)
 	else()
-	  file(RELATIVE_PATH gpgtemphome "${GNUPG_HOME}" ".temphome")
+	  set(gpgtemphome "${GNUPG_HOME}/.temphome")
 	  # ugh... cmake sucks
 	  file(MAKE_DIRECTORY "foo${gpgtemphome}")
 	  file(MAKE_DIRECTORY "foo${gpgtemphome}/${gpgtemphome}")
 	  file(COPY "foo${gpgtemphome}/${gpgtemphome}"
-		DESTINATION "."
+		DESTINATION "${CMAKE_BINARY_DIR}"
 		DIRECTORY_PERMISSIONS
 		OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+	  message(FATAL_ERROR "okay...")
 	  file(REMOVE "foo${gpgtemphome}")
 	  # ...
-	  file(RENAME "${gpgtemphome}" "${GPG_HOME}")
+	  file(RENAME "${CMAKE_BINARY_DIR}/${gpgtemphome}" "${GPG_HOME}")
 	endif()
 	set(ENV{GNUPGHOME} "${GNUPG_HOME}")
   endfunction(checkdir)
@@ -81,11 +82,11 @@ function(gpg_parse_signer gpgtemp result)
   else()
 	set("${result}" FALSE PARENT_SCOPE)
   endif()
-endfunction(gpg_found_signer)
+endfunction(gpg_parse_signer)
 
-function(gpg_check_signer signer)
-  file(RELATIVE_PATH gpgtemp "${GNUPG_HOME}" ".temp")
-  gpg(result --list-keys "${signer}" OUTPUT_VARIABLE ignore)
+function(gpg_require_signer signer)
+  set(gpgtemp "${GNUPG_HOME}/.temp")
+  gpg(result --list-keys "${signer}")
   if(result EQUAL 0)
 	message("git signer ${signer} found.")
   else()
@@ -102,5 +103,4 @@ function(gpg_check_signer signer)
   # set to ultimate trust (for our local module GNUPGHOME)
   gpg(INPUT "echo ${signer}:6:"
 	--import-ownertrust)
-endfunction(gpg_check_signer)
-
+endfunction(gpg_require_signer)
