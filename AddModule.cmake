@@ -21,6 +21,16 @@ if(NOT MODULE_DIR)
 	FILEPATH "Where modules are compiled")
 endif(NOT MODULE_DIR)
 
+file(RELATIVE_PATH test "${CMAKE_BINARY_DIR}" "${MODULE_DIR}")
+string(SUBSTRING "${test}" 0 3 test)
+if("${test}" STREQUAL "../")
+  # we're not in the build directory, EVEN THOUGH WE SHOULD BE >:(
+else()
+  # stop cmake from pitching a fit
+  cmake_policy(SET CMP0058 NEW)
+endif()
+
+
 if(TARGET _cmake_sux_add_module)
 else()
   add_custom_target(_cmake_sux_add_module)
