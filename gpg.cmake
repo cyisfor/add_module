@@ -134,10 +134,10 @@ function(gpg_require_signer signer)
 	  message("nope. trying to receive it...")
 	  gpgorfail(--recv-key "${signer}")
 	endif()
-	list(APPEND checked "${signer}")
-	set_property(checked TARGET _cmake_sux_gpg
-	  PROPERTY checked_signers "${checked}")
   endif()
   # set to ultimate trust (for our local module GNUPGHOME)
   gpgorfail(INPUT "echo ${signer}:6:" --import-ownertrust OUTPUT_QUIET)
+  list(APPEND checked "${signer}")
+  set_property(TARGET _cmake_sux_gpg
+	PROPERTY checked_signers "${checked}")
 endfunction(gpg_require_signer)
