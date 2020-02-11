@@ -1,4 +1,5 @@
 if(ENV{__ADD_MODULE_INCLUDED__})
+  # that should also work for any other submodules stupidly using it?
   return()
 endif()
 
@@ -20,18 +21,29 @@ if(NOT MODULE_DIR)
 	FILEPATH "Where modules are compiled")
 endif(NOT MODULE_DIR)
 
-set(_CMAKE_SUX_ADD_MODULE_DIRS_ADDED)
+if(TARGET _cmake_sux_add_module)
+else()
+  add_custom_target(_cmake_sux_add_module)
+  define_property(TARGET
+	PROPERTY DIRS_ADDED
+	BRIEF_DOCS "Subdirs already added by add_module"
+	FULL_DOCS "FU")
+endif()
 
 function (safely_add_subdir source binary)
   # the SUBDIRECTORIES property is useless
   # because even if you add_subdirectory in a different source dir
   # it still errors out, with no way to tell which source dir had the subdir
-  list(FIND _CMAKE_SUX_ADD_MODULE_DIRS_ADDED "${source}" result)
-  if(result)
+  get_property(dirs_added TARGET _cmake_sux_add_module
+	PROPERTY dirs_added)
+  list(FIND dirs_added "${source}" result)
+  if(NOT result EQUAL -1)
 	return()
   endif()
-  list(APPEND _CMAKE_SUX_ADD_MODULE_DIRS_ADDED "${source}")
   add_subdirectory("${source}" "${binary}")
+  list(APPEND dirs_added "${source}")
+  set_property(TARGET _cmake_sux_add_module
+	PROPERTY dirs_added "${dirs_added}")
 endfunction(safely_add_subdir)
 
 function (add_module_git directory source listfile RESULT commit)
@@ -110,16 +122,16 @@ function (add_module_git directory source listfile RESULT commit)
 	if(NOT GIT_NOSHALLOW)
 	  # https://stackoverflow.com/questions/31278902/how-to-shallow-clone-a-specific-commit-with-depth-1
 	  if(result EQUAL 0)
-		git(fetch ${GIT_RECURSE} --depth 1 origin "${commit}")
+		git(fetch ${GIT_RECURSE} --depth 1 origin "${commit}" ERROR_QUIET)
 		if(result EQUAL 0)
 		  git(checkout FETCH_HEAD)
 		endif()
 	  endif()
 	else(NOT GIT_NOSHALLOW)
-	  git(pull ${GIT_RECURSE} origin "${commit}")
+	  git(pull ${GIT_RECURSE} origin "${commit}" )
 	endif(NOT GIT_NOSHALLOW)
 	if(result EQUAL 0)
-	  git(checkout "${commit}")
+	  git(checkout "${commit}" ERROR_QUIET OUTPUT_QUIET)
 	  if(NOT result EQUAL 0)
 		message(FATAL_ERROR "Could not checkout commit ${commit} from ${directory}")
 	  endif()
@@ -175,3 +187,4 @@ function (add_module directory)
 endfunction(add_module)
 
 set(ENV{__ADD_MODULE_INCLUDED__} 1)
+
