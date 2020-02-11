@@ -21,18 +21,28 @@ if(NOT MODULE_DIR)
 	FILEPATH "Where modules are compiled")
 endif(NOT MODULE_DIR)
 
+add_custom_target(_cmake_sux_add_module)
+define_property(TARGET
+  PROPERTY DIRS_ADDED
+  BRIEF_DOCS "Subdirs already added by add_module"
+  FULL_DOCS "FU")
+
 set(_CMAKE_SUX_ADD_MODULE_DIRS_ADDED)
 
 function (safely_add_subdir source binary)
   # the SUBDIRECTORIES property is useless
   # because even if you add_subdirectory in a different source dir
   # it still errors out, with no way to tell which source dir had the subdir
-  list(FIND _CMAKE_SUX_ADD_MODULE_DIRS_ADDED "${source}" result)
+  get_property(dirs_added TARGET _cmake_sux_add_module
+	PROPERTY dirs_added)
+  list(FIND dirs_added "${source}" result)
   if(NOT result EQUAL -1)
 	return()
   endif()
-  list(APPEND _CMAKE_SUX_ADD_MODULE_DIRS_ADDED "${source}")
   add_subdirectory("${source}" "${binary}")
+  list(APPEND dirs_added "${source}")
+  set_property(TARGET _cmake_sux_add_module
+	PROPERTY dirs_added "${dirs_added}")
 endfunction(safely_add_subdir)
 
 function (add_module_git directory source listfile RESULT commit)
