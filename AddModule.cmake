@@ -22,8 +22,6 @@ if(NOT MODULE_DIR)
 endif(NOT MODULE_DIR)
 
 set(_CMAKE_SUX_ADD_MODULE_DIRS_ADDED)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" PARENT_SCOPE)
 
 function (safely_add_subdir source binary)
   # the SUBDIRECTORIES property is useless
