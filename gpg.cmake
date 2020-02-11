@@ -106,7 +106,7 @@ function(gpg_require_signer signer)
 	message("git signer ${signer} found.")
   else()
 	message("git signer ${signer} not found. Can it be imported from global default?")
-	gpg(result NOHOME --list-keys "${signer}" OUTPUT_QUIET COMMAND_ECHO STDOUT)
+	gpg(result NOHOME --list-keys "${signer}" OUTPUT_QUIET)
 
 	if(result EQUAL 0)
 	  message("yes!")
