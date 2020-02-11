@@ -22,13 +22,15 @@ if(NOT MODULE_DIR)
 endif(NOT MODULE_DIR)
 
 set(_CMAKE_SUX_ADD_MODULE_DIRS_ADDED)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" PARENT_SCOPE)
 
 function (safely_add_subdir source binary)
   # the SUBDIRECTORIES property is useless
   # because even if you add_subdirectory in a different source dir
   # it still errors out, with no way to tell which source dir had the subdir
   list(FIND _CMAKE_SUX_ADD_MODULE_DIRS_ADDED "${source}" result)
-  if(result)
+  if(NOT result EQUAL -1)
 	return()
   endif()
   list(APPEND _CMAKE_SUX_ADD_MODULE_DIRS_ADDED "${source}")
@@ -111,16 +113,16 @@ function (add_module_git directory source listfile RESULT commit)
 	if(NOT GIT_NOSHALLOW)
 	  # https://stackoverflow.com/questions/31278902/how-to-shallow-clone-a-specific-commit-with-depth-1
 	  if(result EQUAL 0)
-		git(fetch ${GIT_RECURSE} --depth 1 origin "${commit}")
+		git(fetch ${GIT_RECURSE} --depth 1 origin "${commit}" ERROR_QUIET)
 		if(result EQUAL 0)
 		  git(checkout FETCH_HEAD)
 		endif()
 	  endif()
 	else(NOT GIT_NOSHALLOW)
-	  git(pull ${GIT_RECURSE} origin "${commit}")
+	  git(pull ${GIT_RECURSE} origin "${commit}" )
 	endif(NOT GIT_NOSHALLOW)
 	if(result EQUAL 0)
-	  git(checkout "${commit}")
+	  git(checkout "${commit}" ERROR_QUIET OUTPUT_QUIET)
 	  if(NOT result EQUAL 0)
 		message(FATAL_ERROR "Could not checkout commit ${commit} from ${directory}")
 	  endif()
@@ -176,3 +178,4 @@ function (add_module directory)
 endfunction(add_module)
 
 set(ENV{__ADD_MODULE_INCLUDED__} 1)
+
