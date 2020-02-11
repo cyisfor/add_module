@@ -4,7 +4,7 @@ set(GNUPG_HOME "${CMAKE_BINARY_DIR}/gnupg"
 
 set(_GNUPG_CMAKE_SUCKS "${CMAKE_CURRENT_LIST_DIR}")
 
-function (gpg result)
+function (gpg resultcmakesux)
   cmake_parse_arguments(PARSE_ARGV 1 A "INTERACTIVE;NOHOME" "HOME;INPUT;INPUT_FILE;OUTPUT_VARIABLE;OUTPUT_FILE" "")
   if(A_INPUT)
 	# input dynamically as a stdin pipe to gpg
@@ -64,7 +64,8 @@ function (gpg result)
   # this is the ONLY WAY to do eval in cmake, which hardcodes keywords of execute_program
   
   include("${CMAKE_CURRENT_BINARY_DIR}/derpthing.cmake")
-  set("${result}" "${result}" PARENT_SCOPE)
+
+  set("${resultcmakesux}" "${${resultcmakesux}}" PARENT_SCOPE)
 endfunction(gpg)
 
 function(gpgorfail)
@@ -92,8 +93,6 @@ function(gpg_require_signer signer)
   else()
 	message("git signer ${signer} not found. Can it be imported from global default?")
 	gpg(result --export "${signer}" NOHOME OUTPUT_FILE "${gpgtemp}")
-	message(FATAL_ERROR "woo ${result} ${gpgtemp}")
-
 	if(result EQUAL 0)
 	  # need import
 	  gpgorfail(--import "${gpgtemp}")

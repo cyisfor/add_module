@@ -1,4 +1,5 @@
 if(ENV{__ADD_MODULE_INCLUDED__})
+  # that should also work for any other submodules stupidly using it?
   return()
 endif()
 
