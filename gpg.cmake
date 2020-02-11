@@ -39,13 +39,14 @@ function (gpg resultcmakesux)
 	  else()
 		set(gpgtemphome ".temphome")
 		# ugh... cmake sucks
-		file(MAKE_DIRECTORY "foo${gpgtemphome}")
-		file(MAKE_DIRECTORY "foo${gpgtemphome}/${gpgtemphome}")
-		file(COPY "foo${gpgtemphome}/${gpgtemphome}"
+		set(derp "${CMAKE_BINARY_DIR}/foo${gpgtemphome}")
+		file(MAKE_DIRECTORY "${derp}")
+		file(MAKE_DIRECTORY "${derp}/${gpgtemphome}")
+		file(COPY "${derp}/${gpgtemphome}"
 		  DESTINATION "${CMAKE_BINARY_DIR}"
 		  DIRECTORY_PERMISSIONS
 		  OWNER_READ OWNER_WRITE OWNER_EXECUTE)
-		file(REMOVE "foo${gpgtemphome}")
+		file(REMOVE_RECURSE "${derp}")
 		# ...
 		file(RENAME "${CMAKE_BINARY_DIR}/${gpgtemphome}" "${A_HOME}")
 			file(MAKE_DIRECTORY "${A_HOME}")
