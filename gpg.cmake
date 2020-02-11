@@ -23,7 +23,27 @@ function (gpg result)
 	else()
 	  set(A_HOME "${GNUPG_HOME}")
 	endif()
-	file(MAKE_DIRECTORY "${A_HOME}")
+	function (checkdir)
+	  file(TIMESTAMP "${A_HOME}" res)
+	  if(res)
+	  else()
+		set(gpgtemphome ".temphome")
+		# ugh... cmake sucks
+		file(MAKE_DIRECTORY "foo${gpgtemphome}")
+		file(MAKE_DIRECTORY "foo${gpgtemphome}/${gpgtemphome}")
+		file(COPY "foo${gpgtemphome}/${gpgtemphome}"
+		  DESTINATION "${CMAKE_BINARY_DIR}"
+		  DIRECTORY_PERMISSIONS
+		  OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+		file(REMOVE "foo${gpgtemphome}")
+		# ...
+		file(RENAME "${CMAKE_BINARY_DIR}/${gpgtemphome}" "${A_HOME}")
+			file(MAKE_DIRECTORY "${A_HOME}")
+	  endif()
+	  set(ENV{GNUPGHOME} "${GNUPG_HOME}")
+	endfunction(checkdir)
+	checkdir()
+	
 	set(A_HOME "env GNUPGHOME=${A_HOME}")
   endif(A_NOHOME)
   
@@ -39,27 +59,6 @@ function (gpg result)
   # XXX: cmake won't escape the arguments! Now what?
   # not a problem for our use of gpg specifically though
   list(JOIN A_UNPARSED_ARGUMENTS " " args)
-
-  function (checkdir)
-	file(TIMESTAMP "${GNUPG_HOME}" res)
-	if(res)
-	else()
-	  set(gpgtemphome "${GNUPG_HOME}/.temphome")
-	  # ugh... cmake sucks
-	  file(MAKE_DIRECTORY "foo${gpgtemphome}")
-	  file(MAKE_DIRECTORY "foo${gpgtemphome}/${gpgtemphome}")
-	  file(COPY "foo${gpgtemphome}/${gpgtemphome}"
-		DESTINATION "${CMAKE_BINARY_DIR}"
-		DIRECTORY_PERMISSIONS
-		OWNER_READ OWNER_WRITE OWNER_EXECUTE)
-	  message(FATAL_ERROR "okay...")
-	  file(REMOVE "foo${gpgtemphome}")
-	  # ...
-	  file(RENAME "${CMAKE_BINARY_DIR}/${gpgtemphome}" "${GPG_HOME}")
-	endif()
-	set(ENV{GNUPGHOME} "${GNUPG_HOME}")
-  endfunction(checkdir)
-  checkdir()
   
   configure_file("${_GNUPG_CMAKE_SUCKS}/gpg_thing.cmake" "derpthing.cmake")
   # this is the ONLY WAY to do eval in cmake, which hardcodes keywords of execute_program
