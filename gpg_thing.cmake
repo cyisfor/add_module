@@ -1,6 +1,6 @@
 execute_process(
+  COMMAND_ECHO STDOUT
   COMMAND ${A_INPUT}
-  ${A_HOME}
   gpg
   ${A_INTERACTIVE}
   ${args}
