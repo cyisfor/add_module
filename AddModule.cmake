@@ -31,6 +31,7 @@ else()
   # byproducts properly! I just can't convince cmake that these modules are configure time
   # created, so if they're in the build tree it just assumes that they're unexpected byproducts
   # generated at build time by some poorly designed custom command.
+  # this does nothing without include(AddModule NO_POLICY_SCOPE)!
   cmake_policy(SET CMP0058 NEW)
 endif()
 
