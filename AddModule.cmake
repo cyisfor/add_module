@@ -27,6 +27,10 @@ if("${test}" STREQUAL "../")
   # we're not in the build directory, EVEN THOUGH WE SHOULD BE >:(
 else()
   # stop cmake from pitching a fit
+  # note this silences some important warnings for developers who don't set all
+  # byproducts properly! I just can't convince cmake that these modules are configure time
+  # created, so if they're in the build tree it just assumes that they're unexpected byproducts
+  # generated at build time by some poorly designed custom command.
   cmake_policy(SET CMP0058 NEW)
 endif()
 
