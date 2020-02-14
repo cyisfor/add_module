@@ -180,7 +180,7 @@ function (add_module directory)
   get_filename_component(listfile "CMakeLists.txt" ABSOLUTE
 	BASE_DIR "${source}")
   # no return here because we have to make sure the correct commit is checked out 
-  set(options)
+  set(options FOREIGN)
   set(onevalue FUNCTION)
   set(multivalue GIT)
   cmake_parse_arguments(PARSE_ARGV 1 A
