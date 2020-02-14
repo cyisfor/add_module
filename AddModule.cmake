@@ -35,7 +35,6 @@ else()
   cmake_policy(SET CMP0058 NEW)
 endif()
 
-
 if(TARGET _cmake_sux_add_module)
 else()
   add_custom_target(_cmake_sux_add_module)
@@ -77,8 +76,9 @@ function (add_module_git directory source RESULT commit)
 	BRIEF_DOCS "no"
 	FULL_DOCS "no")
   set_property(GLOBAL PROPERTY "add_module_git_${source}" "${commit}")
-  cmake_parse_arguments(PARSE_ARGV 5 GIT
+  cmake_parse_arguments(PARSE_ARGV 4 GIT
 	"NOSHALLOW;RECURSE" "SIGNER" "SIGNERS")
+
   get_filename_component(dotgit ".git" ABSOLUTE
 	BASE_DIR "${source}")
   file(TIMESTAMP "${dotgit}" dotgit)
@@ -176,10 +176,10 @@ function (add_module directory)
   get_filename_component(source "${directory}" ABSOLUTE
 	BASE_DIR "${MODULE_DIR}")
   get_filename_component(bindir "${directory}" ABSOLUTE
-	BASE_DIR "${MODULE_BIN_DIR}")  
+	BASE_DIR "${MODULE_BIN_DIR}")
   get_filename_component(listfile "CMakeLists.txt" ABSOLUTE
 	BASE_DIR "${source}")
-  # no return here because we have to make sure the correct commit is checked out 
+  # no return here because we have to make sure the correct commit is checked out
   set(options FOREIGN)
   set(onevalue FUNCTION)
   set(multivalue GIT)
@@ -206,4 +206,3 @@ function (add_module directory)
 endfunction(add_module)
 
 set(ENV{__ADD_MODULE_INCLUDED__} 1)
-
