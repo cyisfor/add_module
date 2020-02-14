@@ -4,7 +4,6 @@ execute_process(
   ${A_INTERACTIVE}
   ${args}
   RESULT_VARIABLE "${resultcmakesux}"
-  ERROR_QUIET
   ${A_INPUT_FILE}
   ${A_OUTPUT_FILE}
   ${A_OUTPUT_VARIABLE})

@@ -21,6 +21,21 @@ if(NOT MODULE_DIR)
 	FILEPATH "Where modules are compiled")
 endif(NOT MODULE_DIR)
 
+file(RELATIVE_PATH test "${CMAKE_BINARY_DIR}" "${MODULE_DIR}")
+string(SUBSTRING "${test}" 0 3 test)
+if("${test}" STREQUAL "../")
+  # we're not in the build directory, EVEN THOUGH WE SHOULD BE >:(
+else()
+  # stop cmake from pitching a fit
+  # note this silences some important warnings for developers who don't set all
+  # byproducts properly! I just can't convince cmake that these modules are configure time
+  # created, so if they're in the build tree it just assumes that they're unexpected byproducts
+  # generated at build time by some poorly designed custom command.
+  # this does nothing without include(AddModule NO_POLICY_SCOPE)!
+  cmake_policy(SET CMP0058 NEW)
+endif()
+
+
 if(TARGET _cmake_sux_add_module)
 else()
   add_custom_target(_cmake_sux_add_module)

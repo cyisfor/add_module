@@ -39,13 +39,14 @@ function (gpg resultcmakesux)
 	  else()
 		set(gpgtemphome ".temphome")
 		# ugh... cmake sucks
-		file(MAKE_DIRECTORY "foo${gpgtemphome}")
-		file(MAKE_DIRECTORY "foo${gpgtemphome}/${gpgtemphome}")
-		file(COPY "foo${gpgtemphome}/${gpgtemphome}"
+		set(derp "${CMAKE_BINARY_DIR}/foo${gpgtemphome}")
+		file(MAKE_DIRECTORY "${derp}")
+		file(MAKE_DIRECTORY "${derp}/${gpgtemphome}")
+		file(COPY "${derp}/${gpgtemphome}"
 		  DESTINATION "${CMAKE_BINARY_DIR}"
 		  DIRECTORY_PERMISSIONS
 		  OWNER_READ OWNER_WRITE OWNER_EXECUTE)
-		file(REMOVE "foo${gpgtemphome}")
+		file(REMOVE_RECURSE "${derp}")
 		# ...
 		file(RENAME "${CMAKE_BINARY_DIR}/${gpgtemphome}" "${A_HOME}")
 			file(MAKE_DIRECTORY "${A_HOME}")
@@ -67,26 +68,6 @@ function (gpg resultcmakesux)
   # XXX: cmake won't escape the arguments! Now what?
   # not a problem for our use of gpg specifically though
   list(JOIN A_UNPARSED_ARGUMENTS " " args)
-
-  function (checkdir)
-	file(TIMESTAMP "${GNUPG_HOME}" res)
-	if(res)
-	else()
-	  file(RELATIVE_PATH gpgtemphome "${GNUPG_HOME}" ".temphome")
-	  # ugh... cmake sucks
-	  file(MAKE_DIRECTORY "foo${gpgtemphome}")
-	  file(MAKE_DIRECTORY "foo${gpgtemphome}/${gpgtemphome}")
-	  file(COPY "foo${gpgtemphome}/${gpgtemphome}"
-		DESTINATION "."
-		DIRECTORY_PERMISSIONS
-		OWNER_READ OWNER_WRITE OWNER_EXECUTE)
-	  file(REMOVE "foo${gpgtemphome}")
-	  # ...
-	  file(RENAME "${gpgtemphome}" "${GPG_HOME}")
-	endif()
-	set(ENV{GNUPGHOME} "${GNUPG_HOME}")
-  endfunction(checkdir)
-  checkdir()
   
   configure_file("${_GNUPG_CMAKE_SUCKS}/gpg_thing.cmake" "derpthing.cmake")
   # this is the ONLY WAY to do eval in cmake, which hardcodes keywords of execute_program
@@ -126,18 +107,22 @@ function(gpg_require_signer signer)
 	message("git signer ${signer} found.")
   else()
 	message("git signer ${signer} not found. Can it be imported from global default?")
-	gpg(result --export "${signer}" NOHOME OUTPUT_FILE "${gpgtemp}")
+	gpg(result NOHOME --list-keys "${signer}" OUTPUT_QUIET)
+
 	if(result EQUAL 0)
+	  message("yes!")
+	  set(output "${GNUPG_HOME}/.tempout")
+	  gpg(result NOHOME --export "${signer}" OUTPUT_FILE "${gpgtemp}")
 	  # need import
 	  gpgorfail(--import "${gpgtemp}")
 	else()
-	  message("nope. trying to receive it...")
+	  message(FATAL_ERROR "nope. trying to receive it...")
 	  gpgorfail(--recv-key "${signer}")
 	endif()
-	list(APPEND checked "${signer}")
-	set_property(checked TARGET _cmake_sux_gpg
-	  PROPERTY checked_signers "${checked}")
   endif()
   # set to ultimate trust (for our local module GNUPGHOME)
   gpgorfail(INPUT "echo ${signer}:6:" --import-ownertrust OUTPUT_QUIET)
+  list(APPEND checked "${signer}")
+  set_property(TARGET _cmake_sux_gpg
+	PROPERTY checked_signers "${checked}")
 endfunction(gpg_require_signer)
