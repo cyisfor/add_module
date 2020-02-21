@@ -1,6 +1,6 @@
 #!/bin/sh
 if [[ -z "$1" ]]; then
-	echo specify branch please
+	echo specify branch tag please
 	exit 1
 fi
 git branch -d $1
