@@ -1,5 +1,4 @@
 #!/bin/sh
-set -e
 if [[ -z "$1" ]]; then
 	echo specify branch please
 	exit 1
