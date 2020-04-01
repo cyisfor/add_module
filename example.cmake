@@ -1,3 +1,6 @@
+cmake_minimum_required(VERSION 3.14)
+project(add_module VERSION 1.0)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/add_module")
 include(AddModule)
 
@@ -11,5 +14,6 @@ add_module(cstuff
   add_cstuff(record mmapfile)
 
 add_module(sqlite
+  FOREIGN
   FOSSIL 3bfa9cc97da10598521b342961df8f5f68c7388f
   https://www.sqlite.org/src)
