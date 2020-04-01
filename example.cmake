@@ -9,3 +9,7 @@ add_module(cstuff
   git@github.com:cyisfor/cstuff.git
   https://github.com/cyisfor/cstuff.git)
   add_cstuff(record mmapfile)
+
+add_module(sqlite
+  FOSSIL 3bfa9cc97da10598521b342961df8f5f68c7388f
+  https://www.sqlite.org/src)

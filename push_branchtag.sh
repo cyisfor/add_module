@@ -4,4 +4,4 @@ if [[ -z "$1" ]]; then
 	exit 1
 fi
 git branch -f $1
-git push repo $1
+git push -u repo $1

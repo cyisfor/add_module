@@ -60,22 +60,31 @@ function (safely_add_subdir source binary)
 	PROPERTY dirs_added "${dirs_added}")
 endfunction(safely_add_subdir)
 
-function (add_module_git directory source RESULT commit)
-  get_property(prop GLOBAL PROPERTY "add_module_git_${source}" DEFINED)
+function (check_commit_hash have type hash)
+  set("${have}" FALSE PARENT_SCOPE)
+  get_property(prop GLOBAL PROPERTY "add_module_${type}_${source}" DEFINED)
   if(prop)
-	get_property(prop GLOBAL PROPERTY "add_module_git_${source}")
+	get_property(prop GLOBAL PROPERTY "add_module_${type}_${source}")
 	if(NOT prop STREQUAL commit)
 	  message(FATAL_ERROR
 		"Need to have the same commit hash for ${directory} ${prop} != ${commit} ${source}")
 	else()
+	  set("${have}" TRUE PARENT_SCOPE)
 	  #message("OK yay got commit ${commit} again")
 	endif()
+  else(prop)
+	define_property(GLOBAL PROPERTY "add_module_${type}_${source}"
+	  BRIEF_DOCS "no"
+	  FULL_DOCS "no")
+	set_property(GLOBAL PROPERTY "add_module_${type}_${source}" "${commit}")
+  endif(prop)
+endfunction(check_commit_hash)
+
+function (add_module_git directory source RESULT commit)
+  check_commit_hash(have git "${commit}")
+  if(have)
 	return()
   endif()
-  define_property(GLOBAL PROPERTY "add_module_git_${source}"
-	BRIEF_DOCS "no"
-	FULL_DOCS "no")
-  set_property(GLOBAL PROPERTY "add_module_git_${source}" "${commit}")
   cmake_parse_arguments(PARSE_ARGV 4 GIT
 	"NOSHALLOW;RECURSE" "SIGNER" "SIGNERS")
 
@@ -173,38 +182,83 @@ function (add_module_git directory source RESULT commit)
   endif(NOT dotgit)
 endfunction(add_module_git)
 
+function(add_module_fossil directory source RESULT commit url)
+  check_commit_hash(have fossil "${commit}")
+  if(have)
+	return()
+  endif()
+  macro (fossil)
+	execute_process(
+	  COMMAND fossil ${ARGV}
+	  WORKING_DIRECTORY "${temp}"
+	  RESULT_VARIABLE result)
+	if(NOT (result EQUAL 0))
+	  message(WARNING "fossil fail ${ARGV}")
+	  set("${RESULT}" "${result}" PARENT_SCOPE)
+	  return()
+	endif()
+  endmacro(fossil)
+  file(TIMESTAMP "${source}" alreadyhave)
+  if(alreadyhave)
+	# already there yo
+	set(temp "${source}")
+	fossil(update "${commit}")
+  else(alreadyhave)
+	file(TIMESTAMP "${source}.fossil" havefoss)
+	if(NOT havefoss)
+	  fossil(clone "${url}" "${source}.fossil")
+	endif()
+	get_filename_component(temp "temp" ABSOLUTE
+	  BASE_DIR "${MODULE_DIR}")
+	file(REMOVE_RECURSE "${temp}")
+	file(MAKE_DIRECTORY "${temp}")
+	fossil(open "${source}.fossil" "${commit}")
+	file(RENAME "${temp}" "${source}")
+  endif(alreadyhave)
+  set("${RESULT}" TRUE PARENT_SCOPE)
+endfunction(add_module_fossil)
+
 function (add_module directory)
   # NOT current binary dir
   get_filename_component(source "${directory}" ABSOLUTE
 	BASE_DIR "${MODULE_DIR}")
-  get_filename_component(bindir "${directory}" ABSOLUTE
-	BASE_DIR "${MODULE_BIN_DIR}")
-  get_filename_component(listfile "CMakeLists.txt" ABSOLUTE
-	BASE_DIR "${source}")
   # no return here because we have to make sure the correct commit is checked out
   set(options FOREIGN)
   set(onevalue FUNCTION)
-  set(multivalue GIT)
+  set(multivalue GIT FOSSIL)
   cmake_parse_arguments(PARSE_ARGV 1 A
 	"${options}" "${onevalue}" "${multivalue}")
-  if(A_GIT)
-	add_module_git("${directory}" "${source}" RESULT ${A_GIT})
+  macro (whendone)
 	if(RESULT)
 	  if(NOT A_FOREIGN)
+		get_filename_component(listfile "CMakeLists.txt" ABSOLUTE
+		  BASE_DIR "${source}")
 		file(TIMESTAMP "${listfile}" timestamp)
 		if(timestamp)
 		else(timestamp)
 		  message(FATAL_ERROR "no listfile found ${directory} ${A_GIT}")
 		endif(timestamp)
+		get_filename_component(bindir "${directory}" ABSOLUTE
+		  BASE_DIR "${MODULE_BIN_DIR}")
 		safely_add_subdir("${source}" "${bindir}")
 	  else()
 		set("${directory}_source" "${source}" PARENT_SCOPE)
 	  endif()
 	  return()
 	endif(RESULT)
+  endmacro()
+  if(A_GIT)
+	add_module_git("${directory}" "${source}" RESULT ${A_GIT})
+	whendone()
+  elseif(A_FOSSIL)
+	add_module_fossil("${directory}" "${source}" RESULT ${A_FOSSIL})
+	whendone()
+  else(A_GIT)
+	message(FATAL_ERROR
+	  "Must specify either FOSSIL or GIT!")
   endif(A_GIT)
   message(FATAL_ERROR
-	"Could not clone ${directory} by any method!")
+	"Could not find a method that worked for add_module!")
 endfunction(add_module)
 
 set(ENV{__ADD_MODULE_INCLUDED__} 1)
