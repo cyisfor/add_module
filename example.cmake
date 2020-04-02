@@ -16,5 +16,6 @@ add_module(cstuff
 add_module(sqlite
   FOREIGN
   FOSSIL 3bfa9cc97da10598521b342961df8f5f68c7388f
+  /extra/home/packages/fossil/sqlite.fossil
   /home/packages/fossil/sqlite.fossil
   https://www.sqlite.org/src)
