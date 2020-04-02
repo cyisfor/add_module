@@ -190,9 +190,9 @@ function(add_module_fossil directory source RESULT commit)
   set(fossildb "${MODULE_DIR}/${directory}.fossil")
   get_filename_component(temp "temp" ABSOLUTE
 	BASE_DIR "${MODULE_DIR}")
-  macro (fossil)
+  macro (fossil command)
 	execute_process(
-	  COMMAND fossil --verbose ${ARGV}
+	  COMMAND fossil ${command} ${ARGN}
 	  WORKING_DIRECTORY "${temp}"
 	  RESULT_VARIABLE result)
 	if(NOT (result EQUAL 0))
@@ -205,7 +205,7 @@ function(add_module_fossil directory source RESULT commit)
   if(alreadyhave)
 	# already there yo
 	set(temp "${source}")
-	fossil(update "${commit}")
+	fossil(update --verbose "${commit}")
   else(alreadyhave)
 	file(REMOVE_RECURSE "${temp}")
 	file(MAKE_DIRECTORY "${temp}")
@@ -221,7 +221,7 @@ function(add_module_fossil directory source RESULT commit)
 			file(RENAME "${temp}/${base}" "${fossildb}")
 			return()
 		  endif()
-		  fossil(clone "${url}" "${fossildb}")
+		  fossil(clone --verbose "${url}" "${fossildb}")
 		  if(result)
 			return()
 		  endif()
