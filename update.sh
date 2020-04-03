@@ -1,7 +1,7 @@
 #!/bin/sh
 if [[ -z "$1" ]]; then
 	echo specify branch please
-	exit 1
+	exec git branch
 fi
 cd add_module
 git pull
