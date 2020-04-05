@@ -1,5 +1,7 @@
-#!/bin/sh
-if [[ -z "$1" ]]; then
+#!/bin/bash
+if [[ -n "$branch" ]]; then
+	:
+elif [[ -z "$1" ]]; then
 	git branch
 	echo specify branch please
 	read branch
