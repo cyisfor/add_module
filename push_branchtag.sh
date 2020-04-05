@@ -1,7 +1,11 @@
 #!/bin/sh
 if [[ -z "$1" ]]; then
-	echo specify branch tag please
-	exec git branch
+	git branch
+	echo specify branch please
+	read branch
+else
+	branch=$1
 fi
-git branch -f $1
-git push -u repo $1
+
+git branch -f $branch
+git push -u repo $branch
