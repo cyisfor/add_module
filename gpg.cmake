@@ -68,8 +68,10 @@ function (gpg resultcmakesux)
   # XXX: cmake won't escape the arguments! Now what?
   # not a problem for our use of gpg specifically though
   list(JOIN A_UNPARSED_ARGUMENTS " " args)
-  
-  configure_file("${_GNUPG_CMAKE_SUCKS}/gpg_thing.cmake" "derpthing.cmake")
+
+  if("${_GNUPG_CMAKE_SUCKS}/gpg_thing.cmake" IS_NEWER_THAN "derpthing.cmake")
+	configure_file("${_GNUPG_CMAKE_SUCKS}/gpg_thing.cmake" "derpthing.cmake")
+  endif()
   # this is the ONLY WAY to do eval in cmake, which hardcodes keywords of execute_program
   
   include("${CMAKE_CURRENT_BINARY_DIR}/derpthing.cmake")
