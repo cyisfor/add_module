@@ -77,11 +77,14 @@ function (gpg resultcmakesux)
   get_property(list_dir TARGET _cmake_sux_gpg PROPERTY list_dir)
   if("${list_dir}/gpg_thing.cmake" IS_NEWER_THAN "derpthing.cmake")
 	message(WARNING "Need new derpthing.")
-	configure_file("${list_dir}/gpg_thing.cmake" "derpthing.cmake")
+	if(NOT IS_DIRECTORY cmake)
+	  file(MAKE_DIRECTORY cmake)
+	endif()
+	configure_file("${list_dir}/gpg_thing.cmake" "cmake/derpthing.cmake")
   endif()
   # this is the ONLY WAY to do eval in cmake, which hardcodes keywords of execute_program
-  
-  include("${CMAKE_CURRENT_BINARY_DIR}/derpthing.cmake")
+  # note: not putting it in a subdir causes an endless cmake loop because CMAKE SUCKS FFF
+  include("${CMAKE_CURRENT_BINARY_DIR}/cmake/derpthing.cmake")
 
   set("${resultcmakesux}" "${${resultcmakesux}}" PARENT_SCOPE)
 endfunction(gpg)
