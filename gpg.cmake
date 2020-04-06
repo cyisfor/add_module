@@ -76,6 +76,7 @@ function (gpg resultcmakesux)
 
   get_property(list_dir TARGET _cmake_sux_gpg PROPERTY list_dir)
   if("${list_dir}/gpg_thing.cmake" IS_NEWER_THAN "derpthing.cmake")
+	message(WARNING "Need new derpthing.")
 	configure_file("${list_dir}/gpg_thing.cmake" "derpthing.cmake")
   endif()
   # this is the ONLY WAY to do eval in cmake, which hardcodes keywords of execute_program
