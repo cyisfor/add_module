@@ -2,15 +2,20 @@ set(GNUPG_HOME "${CMAKE_BINARY_DIR}/gnupg"
   CACHE PATH
   "The automatic repository home for gnupg")
 
-set(_GNUPG_CMAKE_SUCKS "${CMAKE_CURRENT_LIST_DIR}")
-
 if(NOT TARGET _cmake_sux_gpg)
   add_custom_target(_cmake_sux_gpg)
   define_property(TARGET
 	PROPERTY checked_signers
 	BRIEF_DOCS "Signers we already checked to exist"
 	FULL_DOCS "natch")
+  define_property(TARGET
+	PROPERTY list_dir
+	BRIEF_DOCS "The cmake list dir for this target"
+	FULL_DOCS "ditto")
 endif()
+
+set_property(TARGET _cmake_sux_gpg PROPERTY list_dir
+  "${CMAKE_CURRENT_LIST_DIR}")
 
 function (gpg resultcmakesux)
   cmake_parse_arguments(PARSE_ARGV 1 A "INTERACTIVE;NOHOME" "HOME;INPUT;INPUT_FILE;OUTPUT_VARIABLE;OUTPUT_FILE" "")
@@ -69,8 +74,9 @@ function (gpg resultcmakesux)
   # not a problem for our use of gpg specifically though
   list(JOIN A_UNPARSED_ARGUMENTS " " args)
 
-  if("${_GNUPG_CMAKE_SUCKS}/gpg_thing.cmake" IS_NEWER_THAN "derpthing.cmake")
-	configure_file("${_GNUPG_CMAKE_SUCKS}/gpg_thing.cmake" "derpthing.cmake")
+  get_property(list_dir TARGET _cmake_sux_gpg PROPERTY list_dir)
+  if("${list_dir}/gpg_thing.cmake" IS_NEWER_THAN "derpthing.cmake")
+	configure_file("${list_dir}/gpg_thing.cmake" "derpthing.cmake")
   endif()
   # this is the ONLY WAY to do eval in cmake, which hardcodes keywords of execute_program
   
