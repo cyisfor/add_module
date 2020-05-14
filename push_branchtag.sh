@@ -11,3 +11,4 @@ fi
 
 git branch -f $branch
 git push -u repo $branch
+git push

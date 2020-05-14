@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(add_module VERSION 1.0)
+project(someproject VERSION 1.0)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/add_module")
 include(AddModule)
@@ -20,3 +20,6 @@ add_module(sqlite
   /extra/home/packages/fossil/sqlite.fossil
   /home/packages/fossil/sqlite.fossil
   https://www.sqlite.org/src)
+
+add_executable("${PROJECT_NAME}" "${PROJECT_NAME}.c")
+target_link_libraries("${PROJECT_NAME}" PRIVATE cstuff sqlite)
