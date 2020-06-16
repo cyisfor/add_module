@@ -279,7 +279,7 @@ function (add_module directory)
 	  "Must specify either FOSSIL or GIT!")
   endif(A_GIT)
   message(FATAL_ERROR
-	"Could not find a method that worked for add_module!")
+	"Could not find a method that worked for ${directory}!")
 endfunction(add_module)
 
 set(ENV{__ADD_MODULE_INCLUDED__} 1)
