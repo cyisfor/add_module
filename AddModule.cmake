@@ -15,7 +15,7 @@ function(moduledirs name source binary)
 	BASE_DIR "${CMAKE_CURRENT_BINARY_DIR}")
   file(MAKE_DIRECTORY "${moduledir}")
   set("${binary}" "${moduledir}" PARENT_SCOPE)
-endif(NOT MODULE_DIR)
+endfunction(moduledirs)
 
 # stop cmake from pitching a fit because our sources are in the build
 # directory...
@@ -87,7 +87,7 @@ function (add_module_git name sourcename binaryname RESULT commit)
   set("${sourcename}" "${source}" PARENT_SCOPE)
   set("${binaryname}" "${binary}" PARENT_SCOPE)
   
-  cmake_parse_arguments(PARSE_ARGV 4 GIT
+  cmake_parse_arguments(PARSE_ARGV 5 GIT
 	"NOSHALLOW;RECURSE" "SIGNER" "SIGNERS")
 
   get_filename_component(dotgit ".git" ABSOLUTE
@@ -134,13 +134,6 @@ function (add_module_git name sourcename binaryname RESULT commit)
 	  gpg_require_signer("${GIT_SIGNER}")
 	endif()
 	git(config --replace-all merge.verify-signatures true)
-	macro (git)
-	  # redefine this to use the new home...
-	  execute_process(
-		COMMAND env GNUPGHOME="${GNUPG_HOME}" git ${ARGV}
-		WORKING_DIRECTORY "${temp}"
-		RESULT_VARIABLE result)
-	endmacro(git)
   endif(GIT_SIGNER OR GIT_SIGNERS)
 
   foreach(url IN LISTS GIT_UNPARSED_ARGUMENTS)
@@ -180,21 +173,27 @@ function (add_module_git name sourcename binaryname RESULT commit)
   endif(NOT dotgit)
 endfunction(add_module_git)
 
-function(add_module_fossil directory source RESULT commit)
+function(add_module_fossil name sourcename binaryname RESULT commit)
   check_commit(have fossil "${commit}")
   if(have)
 	return()
   endif()
-  set(fossildb "${MODULE_DIR}/${name}.fossil")
+  moduledirs("${name}-FOSSIL-${commit}" source binary)
+  set("${sourcename}" "${source}" PARENT_SCOPE)
+  set("${binaryname}" "${binary}" PARENT_SCOPE)
+  
+  get_filename_component(fossildb "../${name}.fossil" ABSOLUTE
+	BASE_DIR "${source}")
+  message(FATAL_ERROR "Um ${fossildb}")
   get_filename_component(temp "temp" ABSOLUTE
-	BASE_DIR "${MODULE_DIR}")
+	BASE_DIR "${source}")
   macro (fossil command)
 	execute_process(
 	  COMMAND fossil ${command} ${ARGN}
 	  WORKING_DIRECTORY "${temp}"
 	  RESULT_VARIABLE result)
 	if(NOT (result EQUAL 0))
-	  message(WARNING "fossil fail ${ARGV}")
+	  message(FATAL_ERROR "fossil fail ${ARGV}")
 	  set("${RESULT}" "${result}" PARENT_SCOPE)
 	  return()
 	endif()
@@ -238,7 +237,6 @@ endfunction(add_module_fossil)
 
 function (add_module name)
   # NOT current binary dir
-  moduledirs(name source binary)
   # no return here because we have to make sure the correct commit is checked out
   set(options FOREIGN)
   set(onevalue FUNCTION)
