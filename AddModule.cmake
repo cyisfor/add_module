@@ -6,14 +6,12 @@ endif()
 set(ADD_MODULE_STRICT_VERSION TRUE CACHE BOOL
   "Set this to OFF and add_module will only warn upon detecting a version mismatch instead of erroring out. May be good to disable when debugging deep submodules with inadequate self tests. A better idea would be to write adequate self tests for those submodules.")
 
-function(moduledirs name source binary)
-  get_filename_component(moduledir "modules/${name}" ABSOLUTE
+function(moduledirs ident source binary)
+  get_filename_component(moduledir "modules/${ident}" ABSOLUTE
 	BASE_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-  file(MAKE_DIRECTORY "${moduledir}")
   set("${source}" "${moduledir}" PARENT_SCOPE)
-  get_filename_component(moduledir "bin_modules/${name}" ABSOLUTE
+  get_filename_component(moduledir "bin_modules/${ident}" ABSOLUTE
 	BASE_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-  file(MAKE_DIRECTORY "${moduledir}")
   set("${binary}" "${moduledir}" PARENT_SCOPE)
 endfunction(moduledirs)
 
@@ -86,7 +84,9 @@ function (add_module_git name sourcename binaryname RESULT commit)
   moduledirs("${name}-${commit}" source binary)
   set("${sourcename}" "${source}" PARENT_SCOPE)
   set("${binaryname}" "${binary}" PARENT_SCOPE)
-  
+  file(MAKE_DIRECTORY "${source}")
+  file(MAKE_DIRECTORY "${binary}")
+
   cmake_parse_arguments(PARSE_ARGV 5 GIT
 	"NOSHALLOW;RECURSE" "SIGNER" "SIGNERS")
 
@@ -178,14 +178,16 @@ function(add_module_fossil name sourcename binaryname RESULT commit)
   if(have)
 	return()
   endif()
-  moduledirs("${name}-FOSSIL-${commit}" source binary)
+  set(ident ${name}-FOSSIL-${commit})
+  moduledirs("${ident}" source binary)
   set("${sourcename}" "${source}" PARENT_SCOPE)
   set("${binaryname}" "${binary}" PARENT_SCOPE)
+  #file(MAKE_DIRECTORY "${source}")
+  file(MAKE_DIRECTORY "${binary}")
   
   get_filename_component(fossildb "../${name}.fossil" ABSOLUTE
 	BASE_DIR "${source}")
-  message(FATAL_ERROR "Um ${fossildb}")
-  get_filename_component(temp "temp" ABSOLUTE
+  get_filename_component(temp "../${ident}-temp" ABSOLUTE
 	BASE_DIR "${source}")
   macro (fossil command)
 	execute_process(
