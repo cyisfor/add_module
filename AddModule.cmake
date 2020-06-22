@@ -6,13 +6,16 @@ endif()
 set(ADD_MODULE_STRICT_VERSION TRUE CACHE BOOL
   "Set this to OFF and add_module will only warn upon detecting a version mismatch instead of erroring out. May be good to disable when debugging deep submodules with inadequate self tests. A better idea would be to write adequate self tests for those submodules.")
 
-function(moduledirs ident source binary)
+function(moduledirs ident source)
   get_filename_component(moduledir "modules/${ident}" ABSOLUTE
 	BASE_DIR "${CMAKE_CURRENT_BINARY_DIR}")
   set("${source}" "${moduledir}" PARENT_SCOPE)
-  get_filename_component(moduledir "bin_modules/${ident}" ABSOLUTE
-	BASE_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-  set("${binary}" "${moduledir}" PARENT_SCOPE)
+  if(ARGN)
+	get_filename_component(moduledir "bin_modules/${ident}" ABSOLUTE
+	  BASE_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+	list(GET ARGN 1 binary)
+	set("${binary}" "${moduledir}" PARENT_SCOPE)
+  endif(ARGN)
 endfunction(moduledirs)
 
 # stop cmake from pitching a fit because our sources are in the build
@@ -81,7 +84,8 @@ function (add_module_git name sourcename binaryname RESULT commit)
 	return()
   endif()
 
-  moduledirs("${name}-${commit}" source binary)
+  set(ident "${name}-${commit}")
+  moduledirs("${ident}" source binary)
   set("${sourcename}" "${source}" PARENT_SCOPE)
   set("${binaryname}" "${binary}" PARENT_SCOPE)
   file(MAKE_DIRECTORY "${source}")
@@ -90,15 +94,13 @@ function (add_module_git name sourcename binaryname RESULT commit)
   cmake_parse_arguments(PARSE_ARGV 5 GIT
 	"NOSHALLOW;RECURSE" "SIGNER" "SIGNERS")
 
-  get_filename_component(dotgit ".git" ABSOLUTE
-	BASE_DIR "${source}")
+  moduledirs(".git" dotgit)
   file(TIMESTAMP "${dotgit}" dotgit)
   if(dotgit)
 	# already there yo
 	set(temp "${source}")
   else(dotgit)
-	get_filename_component(temp "../temp" ABSOLUTE
-	  BASE_DIR "${source}")
+	moduledirs("${ident}-temp" temp)
 	file(REMOVE_RECURSE "${temp}")
   endif(dotgit)
 
@@ -222,8 +224,11 @@ function(add_module_fossil name sourcename binaryname RESULT commit)
 		  endif()
 		  fossil(clone --verbose "${url}" "${fossildb}")
 		  if(result)
-			return()
-		  endif()
+			fossil(update --verbose "${commit}")
+			if(result)
+			  return()
+			endif(result)
+		  endif(result)
 		endforeach()
 		message("umm ${ARGV}")
 		message(FATAL_ERROR "Could not clone from any of these URLS! ${ARGV}")
