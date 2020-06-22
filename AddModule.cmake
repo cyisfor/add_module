@@ -6,34 +6,26 @@ endif()
 set(ADD_MODULE_STRICT_VERSION TRUE CACHE BOOL
   "Set this to OFF and add_module will only warn upon detecting a version mismatch instead of erroring out. May be good to disable when debugging deep submodules with inadequate self tests. A better idea would be to write adequate self tests for those submodules.")
 
-if(NOT MODULE_DIR)
-  get_filename_component(moduledir "modules" ABSOLUTE
-	BASE_DIR "${CMAKE_BINARY_DIR}")
+function(moduledirs name source binary)
+  get_filename_component(moduledir "modules/${name}" ABSOLUTE
+	BASE_DIR "${CMAKE_CURRENT_BINARY_DIR}")
   file(MAKE_DIRECTORY "${moduledir}")
-  set(MODULE_DIR "${moduledir}"
-	CACHE
-	FILEPATH "Where modules are located")
-  get_filename_component(moduledir "bin_modules" ABSOLUTE
-	BASE_DIR "${CMAKE_BINARY_DIR}")
+  set("${source}" "${moduledir}" PARENT_SCOPE)
+  get_filename_component(moduledir "bin_modules/${name}" ABSOLUTE
+	BASE_DIR "${CMAKE_CURRENT_BINARY_DIR}")
   file(MAKE_DIRECTORY "${moduledir}")
-  set(MODULE_BIN_DIR "${moduledir}"
-	CACHE
-	FILEPATH "Where modules are compiled")
+  set("${binary}" "${moduledir}" PARENT_SCOPE)
 endif(NOT MODULE_DIR)
 
-file(RELATIVE_PATH test "${CMAKE_BINARY_DIR}" "${MODULE_DIR}")
-string(SUBSTRING "${test}" 0 3 test)
-if("${test}" STREQUAL "../")
-  # we're not in the build directory, EVEN THOUGH WE SHOULD BE >:(
-else()
-  # stop cmake from pitching a fit
-  # note this silences some important warnings for developers who don't set all
-  # byproducts properly! I just can't convince cmake that these modules are configure time
-  # created, so if they're in the build tree it just assumes that they're unexpected byproducts
-  # generated at build time by some poorly designed custom command.
-  # this does nothing without include(AddModule NO_POLICY_SCOPE)!
-  cmake_policy(SET CMP0058 NEW)
-endif()
+# stop cmake from pitching a fit because our sources are in the build
+# directory...
+# note this silences some important warnings for developers who don't set all
+# byproducts properly! I just can't convince cmake that these modules are
+# configure time created, so if they're in the build tree it just assumes
+# that they're unexpected byproducts generated at build time by some poorly
+# designed custom command.
+# this does nothing without include(AddModule NO_POLICY_SCOPE)!
+cmake_policy(SET CMP0058 NEW)
 
 if(TARGET _cmake_sux_add_module)
 else()
@@ -60,7 +52,7 @@ function (safely_add_subdir source binary)
 	PROPERTY dirs_added "${dirs_added}")
 endfunction(safely_add_subdir)
 
-function (check_commit_hash have type hash)
+function (check_commit have type source)
   set("${have}" FALSE PARENT_SCOPE)
   get_property(prop GLOBAL PROPERTY "add_module_${type}_${source}" DEFINED)
   if(prop)
@@ -68,10 +60,10 @@ function (check_commit_hash have type hash)
 	if(NOT prop STREQUAL commit)
 	  if(ADD_MODULE_STRICT_VERSION)
 		message(FATAL_ERROR
-		  "Need to have the same commit hash for ${directory} ${prop} != ${commit} ${source}")
+		  "Need to have the same commit hash for ${name} ${prop} != ${commit} ${source}")
 	  else()
 		message(WARNING
-		  "Need to have the same commit hash for ${directory} ${prop} != ${commit} ${source}")
+		  "Need to have the same commit hash for ${name} ${prop} != ${commit} ${source}")
 	  endif()
 	else()
 	  set("${have}" TRUE PARENT_SCOPE)
@@ -83,13 +75,18 @@ function (check_commit_hash have type hash)
 	  FULL_DOCS "no")
 	set_property(GLOBAL PROPERTY "add_module_${type}_${source}" "${commit}")
   endif(prop)
-endfunction(check_commit_hash)
+endfunction(check_commit)
 
-function (add_module_git directory source RESULT commit)
-  check_commit_hash(have git "${commit}")
+function (add_module_git name sourcename binaryname RESULT commit)
+  check_commit(have git "${commit}")
   if(have)
 	return()
   endif()
+
+  moduledirs("${name}-${commit}" source binary)
+  set("${sourcename}" "${source}" PARENT_SCOPE)
+  set("${binaryname}" "${binary}" PARENT_SCOPE)
+  
   cmake_parse_arguments(PARSE_ARGV 4 GIT
 	"NOSHALLOW;RECURSE" "SIGNER" "SIGNERS")
 
@@ -100,8 +97,8 @@ function (add_module_git directory source RESULT commit)
 	# already there yo
 	set(temp "${source}")
   else(dotgit)
-	get_filename_component(temp "temp" ABSOLUTE
-	  BASE_DIR "${MODULE_DIR}")
+	get_filename_component(temp "../temp" ABSOLUTE
+	  BASE_DIR "${source}")
 	file(REMOVE_RECURSE "${temp}")
   endif(dotgit)
 
@@ -161,7 +158,7 @@ function (add_module_git directory source RESULT commit)
 	  if(result EQUAL 0)
 		git(checkout "${commit}" ERROR_QUIET OUTPUT_QUIET)
 		if(NOT result EQUAL 0)
-		  message(FATAL_ERROR "Could not checkout commit ${commit} from ${directory}")
+		  message(FATAL_ERROR "Could not checkout commit ${commit} from ${name}")
 		endif()
 	  endif()	
 	endif(NOT GIT_NOSHALLOW)
@@ -173,10 +170,10 @@ function (add_module_git directory source RESULT commit)
 	  set("${RESULT}" TRUE PARENT_SCOPE)
 	  return()
 	endif(result EQUAL 0)
-	message(WARNING "URL ${url} failed for GIT ${directory}")
+	message(WARNING "URL ${url} failed for GIT ${name}")
   endforeach(url in LISTS GIT_UNPARSED_ARGUMENTS)
   message(WARNING
-	"Could not clone ${directory} from any of its GIT URIs!")
+	"Could not clone ${name} from any of its GIT URIs!")
   set("${RESULT}" FALSE PARENT_SCOPE)
   if(NOT dotgit)
 	file(REMOVE_RECURSE "${temp}")
@@ -184,11 +181,11 @@ function (add_module_git directory source RESULT commit)
 endfunction(add_module_git)
 
 function(add_module_fossil directory source RESULT commit)
-  check_commit_hash(have fossil "${commit}")
+  check_commit(have fossil "${commit}")
   if(have)
 	return()
   endif()
-  set(fossildb "${MODULE_DIR}/${directory}.fossil")
+  set(fossildb "${MODULE_DIR}/${name}.fossil")
   get_filename_component(temp "temp" ABSOLUTE
 	BASE_DIR "${MODULE_DIR}")
   macro (fossil command)
@@ -239,17 +236,16 @@ function(add_module_fossil directory source RESULT commit)
   set("${RESULT}" TRUE PARENT_SCOPE)
 endfunction(add_module_fossil)
 
-function (add_module directory)
+function (add_module name)
   # NOT current binary dir
-  get_filename_component(source "${directory}" ABSOLUTE
-	BASE_DIR "${MODULE_DIR}")
+  moduledirs(name source binary)
   # no return here because we have to make sure the correct commit is checked out
   set(options FOREIGN)
   set(onevalue FUNCTION)
   set(multivalue GIT FOSSIL)
   cmake_parse_arguments(PARSE_ARGV 1 A
 	"${options}" "${onevalue}" "${multivalue}")
-  macro (whendone)
+  macro (whendone source binary)
 	if(RESULT)
 	  if(NOT A_FOREIGN)
 		get_filename_component(listfile "CMakeLists.txt" ABSOLUTE
@@ -257,29 +253,27 @@ function (add_module directory)
 		file(TIMESTAMP "${listfile}" timestamp)
 		if(timestamp)
 		else(timestamp)
-		  message(FATAL_ERROR "no listfile found ${directory} ${A_GIT}")
+		  message(FATAL_ERROR "no listfile found for ${name}")
 		endif(timestamp)
-		get_filename_component(bindir "${directory}" ABSOLUTE
-		  BASE_DIR "${MODULE_BIN_DIR}")
-		safely_add_subdir("${source}" "${bindir}")
+		safely_add_subdir("${source}" "${binary}")
 	  endif()
 	  get_filename_component(source "${source}" ABSOLUTE)
-	  set("${directory}_source" "${source}" PARENT_SCOPE)
+	  set("${name}_source" "${source}" PARENT_SCOPE)
 	  return()
 	endif(RESULT)
   endmacro()
   if(A_GIT)
-	add_module_git("${directory}" "${source}" RESULT ${A_GIT})
-	whendone()
+	add_module_git("${name}" source binary RESULT ${A_GIT})
+	whendone("${source}" "${binary}")
   elseif(A_FOSSIL)
-	add_module_fossil("${directory}" "${source}" RESULT ${A_FOSSIL})
-	whendone()
+	add_module_fossil("${name}" source binary RESULT ${A_FOSSIL})
+	whendone("${source}" "${binary}")
   else(A_GIT)
 	message(FATAL_ERROR
-	  "Must specify either FOSSIL or GIT!")
+	  "Must specify either FOSSIL or GIT! TODO: add svn, mercurial, etc")
   endif(A_GIT)
   message(FATAL_ERROR
-	"Could not find a method that worked for ${directory}!")
+	"Could not find a method that worked for ${name}!")
 endfunction(add_module)
 
 set(ENV{__ADD_MODULE_INCLUDED__} 1)

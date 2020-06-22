@@ -1,6 +1,7 @@
 set(GNUPG_HOME "${CMAKE_BINARY_DIR}/gnupg"
   CACHE PATH
   "The automatic repository home for gnupg")
+set($ENV{GNUPG_HOME} "${GNUPG_HOME}")
 
 if(NOT TARGET _cmake_sux_gpg)
   add_custom_target(_cmake_sux_gpg)
