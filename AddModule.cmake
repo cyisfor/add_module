@@ -13,7 +13,7 @@ function(moduledirs ident source)
   if(ARGN)
 	get_filename_component(moduledir "bin_modules/${ident}" ABSOLUTE
 	  BASE_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-	list(GET ARGN 1 binary)
+	list(GET ARGN 0 binary)
 	set("${binary}" "${moduledir}" PARENT_SCOPE)
   endif(ARGN)
 endfunction(moduledirs)
