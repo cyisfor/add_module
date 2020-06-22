@@ -94,10 +94,12 @@ function (add_module_git name sourcename binaryname RESULT commit)
   cmake_parse_arguments(PARSE_ARGV 5 GIT
 	"NOSHALLOW;RECURSE" "SIGNER" "SIGNERS")
 
-  moduledirs(".git" dotgit)
+  get_filename_component(dotgit ".git" ABSOLUTE
+	BASE_DIR "${source}")
   file(TIMESTAMP "${dotgit}" dotgit)
   if(dotgit)
 	# already there yo
+	file(REMOVE_RECURSE "${temp}")
 	set(temp "${source}")
   else(dotgit)
 	moduledirs("${ident}-temp" temp)
@@ -155,7 +157,7 @@ function (add_module_git name sourcename binaryname RESULT commit)
 		if(NOT result EQUAL 0)
 		  message(FATAL_ERROR "Could not checkout commit ${commit} from ${name}")
 		endif()
-	  endif()	
+	  endif()
 	endif(NOT GIT_NOSHALLOW)
 	if(result EQUAL 0)
 	  if(NOT dotgit)
@@ -186,11 +188,9 @@ function(add_module_fossil name sourcename binaryname RESULT commit)
   set("${binaryname}" "${binary}" PARENT_SCOPE)
   #file(MAKE_DIRECTORY "${source}")
   file(MAKE_DIRECTORY "${binary}")
-  
-  get_filename_component(fossildb "../${name}.fossil" ABSOLUTE
-	BASE_DIR "${source}")
-  get_filename_component(temp "../${ident}-temp" ABSOLUTE
-	BASE_DIR "${source}")
+
+  moduledirs("${name}.fossil" fossildb)
+  moduledirs("${ident}-temp" temp)
   macro (fossil command)
 	execute_process(
 	  COMMAND fossil ${command} ${ARGN}
@@ -280,5 +280,67 @@ function (add_module name)
   message(FATAL_ERROR
 	"Could not find a method that worked for ${name}!")
 endfunction(add_module)
+
+# just a helper for certain... foreign build systems
+function (autotools source target)
+  cmake_parse_arguments(PARSE_ARGV 2 A
+	"NORECONFINSTALL" "LIBRARY;EXECUTABLE" "CONFIGURE")
+  if(A_AUTOTOOLS)
+	get_filename_component(makefile "Makefile" ABSOLUTE
+	  BASE_DIR "${source}")
+	get_filename_component(configure "configure" ABSOLUTE
+	  BASE_DIR "${source}")
+	get_filename_component(configureac "configure.ac" ABSOLUTE
+	  BASE_DIR "${source}")
+	get_filename_component(makefilein "Makefile.in" ABSOLUTE
+	  BASE_DIR "${source}")
+	get_filename_component(makefileam "Makefile.am" ABSOLUTE
+	  BASE_DIR "${source}")
+	if(A_NORECONFINSTALL) 
+	  add_custom_command(
+		OUTPUT "${configure}"
+		COMMAND autoreconf
+		WORKING_DIRECTORY "${source}"
+		BYPRODUCTS "${makefilein}"
+		DEPENDS "${configureac}" "${makefileam}")
+	else()
+	  add_custom_command(
+		OUTPUT "${configure}"
+		COMMAND autoreconf -i
+		WORKING_DIRECTORY "${source}"
+		BYPRODUCTS "${makefilein}"
+		DEPENDS "${configureac}" "${makefileam}")
+	endif()
+	add_custom_command(
+	  OUTPUT "${makefile}"
+	  COMMAND ./configure ${A_CONFIGURE}
+	  WORKING_DIRECTORY "${source}"
+	  # BYPRODUCTS tons
+	  DEPENDS "${configure}")
+	if(A_LIBRARY)
+	  get_filename_component(libloc "${A_LIBRARY}" ABSOLUTE
+		BASE_DIR "${source}")
+	  target_link_libraries("${target}" PUBLIC "${libloc}")
+	  add_custom_command(
+		OUTPUT "${libloc}"
+		COMMAND make -j4 -l4 && make install
+		WORKING_DIRECTORY "${source}"
+		# BYPRODUCTS oodles
+		DEPENDS "${makefile}")
+	endif()
+	if(A_EXECUTABLE)
+	  get_filename_component(exeloc "${A_EXECUTABLE}" ABSOLUTE
+		BASE_DIR "${source}")
+	  add_custom_target("${A_EXECUTABLE}"
+		DEPENDS "${exeloc}")
+	  add_dependencies("${target}" "${A_EXECUTABLE}")  
+	  add_custom_command(
+		OUTPUT "${exeloc}"
+		COMMAND make -j4 -l4
+		WORKING_DIRECTORY "${source}"
+		# BYPRODUCTS oodles
+		DEPENDS "${makefile}")	  
+	endif()
+endfunction(autotools)
 
 set(ENV{__ADD_MODULE_INCLUDED__} 1)

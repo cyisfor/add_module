@@ -1,5 +1,8 @@
 #include "mystring.h"
+
 #include <sqlite3.h>
+
+#include <stdio.h> // more generic includes should go lower! >:(
 
 int main(int argc, char *argv[])
 {
