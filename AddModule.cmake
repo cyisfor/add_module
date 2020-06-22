@@ -206,7 +206,7 @@ function(add_module_fossil name sourcename binaryname RESULT commit)
   if(alreadyhave)
 	# already there yo
 	set(temp "${source}")
-	fossil(update --verbose "${commit}")
+	#fossil(update --verbose "${commit}")
   else(alreadyhave)
 	file(REMOVE_RECURSE "${temp}")
 	file(MAKE_DIRECTORY "${temp}")
@@ -282,65 +282,64 @@ function (add_module name)
 endfunction(add_module)
 
 # just a helper for certain... foreign build systems
-function (autotools source target)
+function (autotools source install target)
   cmake_parse_arguments(PARSE_ARGV 2 A
 	"NORECONFINSTALL" "LIBRARY;EXECUTABLE" "CONFIGURE")
-  if(A_AUTOTOOLS)
-	get_filename_component(makefile "Makefile" ABSOLUTE
-	  BASE_DIR "${source}")
-	get_filename_component(configure "configure" ABSOLUTE
-	  BASE_DIR "${source}")
-	get_filename_component(configureac "configure.ac" ABSOLUTE
-	  BASE_DIR "${source}")
-	get_filename_component(makefilein "Makefile.in" ABSOLUTE
-	  BASE_DIR "${source}")
-	get_filename_component(makefileam "Makefile.am" ABSOLUTE
-	  BASE_DIR "${source}")
-	if(A_NORECONFINSTALL) 
-	  add_custom_command(
-		OUTPUT "${configure}"
-		COMMAND autoreconf
-		WORKING_DIRECTORY "${source}"
-		BYPRODUCTS "${makefilein}"
-		DEPENDS "${configureac}" "${makefileam}")
-	else()
-	  add_custom_command(
-		OUTPUT "${configure}"
-		COMMAND autoreconf -i
-		WORKING_DIRECTORY "${source}"
-		BYPRODUCTS "${makefilein}"
-		DEPENDS "${configureac}" "${makefileam}")
-	endif()
+  get_filename_component(makefile "Makefile" ABSOLUTE
+	BASE_DIR "${source}")
+  get_filename_component(configure "configure" ABSOLUTE
+	BASE_DIR "${source}")
+  get_filename_component(configureac "configure.ac" ABSOLUTE
+	BASE_DIR "${source}")
+  get_filename_component(makefilein "Makefile.in" ABSOLUTE
+	BASE_DIR "${source}")
+  get_filename_component(makefileam "Makefile.am" ABSOLUTE
+	BASE_DIR "${source}")
+  if(A_NORECONFINSTALL) 
 	add_custom_command(
-	  OUTPUT "${makefile}"
-	  COMMAND ./configure ${A_CONFIGURE}
+	  OUTPUT "${configure}"
+	  COMMAND autoreconf
 	  WORKING_DIRECTORY "${source}"
-	  # BYPRODUCTS tons
-	  DEPENDS "${configure}")
-	if(A_LIBRARY)
-	  get_filename_component(libloc "${A_LIBRARY}" ABSOLUTE
-		BASE_DIR "${source}")
-	  target_link_libraries("${target}" PUBLIC "${libloc}")
-	  add_custom_command(
-		OUTPUT "${libloc}"
-		COMMAND make -j4 -l4 && make install
-		WORKING_DIRECTORY "${source}"
-		# BYPRODUCTS oodles
-		DEPENDS "${makefile}")
-	endif()
-	if(A_EXECUTABLE)
-	  get_filename_component(exeloc "${A_EXECUTABLE}" ABSOLUTE
-		BASE_DIR "${source}")
-	  add_custom_target("${A_EXECUTABLE}"
-		DEPENDS "${exeloc}")
-	  add_dependencies("${target}" "${A_EXECUTABLE}")  
-	  add_custom_command(
-		OUTPUT "${exeloc}"
-		COMMAND make -j4 -l4
-		WORKING_DIRECTORY "${source}"
-		# BYPRODUCTS oodles
-		DEPENDS "${makefile}")	  
-	endif()
+	  BYPRODUCTS "${makefilein}"
+	  DEPENDS "${configureac}" "${makefileam}")
+  else()
+	add_custom_command(
+	  OUTPUT "${configure}"
+	  COMMAND autoreconf -i
+	  WORKING_DIRECTORY "${source}"
+	  BYPRODUCTS "${makefilein}"
+	  DEPENDS "${configureac}" "${makefileam}")
+  endif()
+  add_custom_command(
+	OUTPUT "${makefile}"
+	COMMAND ./configure --prefix "${install}" ${A_CONFIGURE}
+	WORKING_DIRECTORY "${source}"
+	# BYPRODUCTS tons
+	DEPENDS "${configure}")
+  if(A_LIBRARY)
+	get_filename_component(libloc "${A_LIBRARY}" ABSOLUTE
+	  BASE_DIR "${install}/lib")
+	target_link_libraries("${target}" PUBLIC "${libloc}")
+	add_custom_command(
+	  OUTPUT "${libloc}"
+	  COMMAND make -j4 -l4 && make install
+	  WORKING_DIRECTORY "${source}"
+	  # BYPRODUCTS oodles
+	  DEPENDS "${makefile}")
+  endif()
+  if(A_EXECUTABLE)
+	get_filename_component(exeloc "${A_EXECUTABLE}" ABSOLUTE
+	  BASE_DIR "${install}/bin")
+	add_custom_target("${A_EXECUTABLE}"
+	  DEPENDS "${exeloc}")
+	add_dependencies("${target}" "${A_EXECUTABLE}")  
+	add_custom_command(
+	  OUTPUT "${exeloc}"
+	  COMMAND make -j4 -l4 && make install
+	  WORKING_DIRECTORY "${source}"
+	  # BYPRODUCTS oodles
+	  DEPENDS "${makefile}")	  
+  endif()
 endfunction(autotools)
 
 set(ENV{__ADD_MODULE_INCLUDED__} 1)

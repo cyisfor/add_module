@@ -19,11 +19,12 @@ add_module(sqlite
   FOSSIL 3bfa9cc97da10598521b342961df8f5f68c7388f
   /extra/home/packages/fossil/sqlite.fossil
   /home/packages/fossil/sqlite.fossil
-  https://www.sqlite.org/src)
+  )#https://www.sqlite.org/src)
 add_executable("${PROJECT_NAME}" "${PROJECT_NAME}.c")
 target_link_libraries("${PROJECT_NAME}" PRIVATE cstuff)
 # XXX: hax...
-moduledir("sqlite-FOSSIL-3bfa9cc97da10598521b342961df8f5f68c7388f" source binary)
-autotools(source "${PROJECT_NAME}"
-  LIBRARY "${binary}/lib/libsqlite.so")
+moduledirs(
+  "sqlite-FOSSIL-3bfa9cc97da10598521b342961df8f5f68c7388f" source binary)
+autotools("${source}" "${binary}" "${PROJECT_NAME}"
+  LIBRARY "libsqlite.so")
 
