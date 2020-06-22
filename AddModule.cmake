@@ -284,7 +284,7 @@ endfunction(add_module)
 # just a helper for certain... foreign build systems
 function (autotools source install target)
   cmake_parse_arguments(PARSE_ARGV 2 A
-	"NORECONFINSTALL" "LIBRARY;EXECUTABLE" "CONFIGURE")
+	"NORECONFINSTALL;NOAUTOMAKE" "LIBRARY;EXECUTABLE" "CONFIGURE")
   get_filename_component(makefile "Makefile" ABSOLUTE
 	BASE_DIR "${source}")
   get_filename_component(configure "configure" ABSOLUTE
@@ -293,22 +293,26 @@ function (autotools source install target)
 	BASE_DIR "${source}")
   get_filename_component(makefilein "Makefile.in" ABSOLUTE
 	BASE_DIR "${source}")
-  get_filename_component(makefileam "Makefile.am" ABSOLUTE
-	BASE_DIR "${source}")
+  if(A_NOAUTOMAKE)
+	set(makefileam)
+  else()
+	get_filename_component(makefileam "Makefile.am" ABSOLUTE
+	  BASE_DIR "${source}")
+  endif()
   if(A_NORECONFINSTALL) 
 	add_custom_command(
 	  OUTPUT "${configure}"
 	  COMMAND autoreconf
 	  WORKING_DIRECTORY "${source}"
 	  BYPRODUCTS "${makefilein}"
-	  DEPENDS "${configureac}" "${makefileam}")
+	  DEPENDS "${configureac}" ${makefileam})
   else()
 	add_custom_command(
 	  OUTPUT "${configure}"
 	  COMMAND autoreconf -i
 	  WORKING_DIRECTORY "${source}"
 	  BYPRODUCTS "${makefilein}"
-	  DEPENDS "${configureac}" "${makefileam}")
+	  DEPENDS "${configureac}" ${makefileam})
   endif()
   add_custom_command(
 	OUTPUT "${makefile}"
@@ -319,7 +323,10 @@ function (autotools source install target)
   if(A_LIBRARY)
 	get_filename_component(libloc "${A_LIBRARY}" ABSOLUTE
 	  BASE_DIR "${install}/lib")
+	add_custom_target("${A_LIBRARY}"
+	  DEPENDS "${libloc}")
 	target_link_libraries("${target}" PUBLIC "${libloc}")
+	add_dependencies("${target}" "${A_LIBRARY}")
 	add_custom_command(
 	  OUTPUT "${libloc}"
 	  COMMAND make -j4 -l4 && make install
