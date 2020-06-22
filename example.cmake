@@ -26,6 +26,7 @@ target_link_libraries("${PROJECT_NAME}" PRIVATE cstuff)
 moduledirs(
   "sqlite-FOSSIL-3bfa9cc97da10598521b342961df8f5f68c7388f" source binary)
 autotools("${source}" "${binary}" "${PROJECT_NAME}"
-  LIBRARY "libsqlite.so"
+  LIBRARY "libsqlite3.so"
+  CONFIGURE --enable-fts4 --enable-fts5 --enable-geopoly --enable-json1 --disable-tcl
   NOAUTOMAKE)
 
